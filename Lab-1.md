@@ -175,10 +175,10 @@ This returns two values:
 1) number of **nonzero** voxels  
 2) total volume (in mm³)
 
-Before you run it, check what the command does:
+Before you run it, check what the command does. Note that most programs in FSL will tell you how to use them if you just enter them into the command line like below.
 
 ```bash
-fslstats -h
+fslstats
 ```
 
 **Q4.** Report the approximate brain volume (mm³) and convert it to cm³.  
@@ -252,7 +252,7 @@ Then:
 
 When you click a voxel, the atlas provides the most likely label at that location.
 
-**Q6.** Using the atlas + coordinates, find approximate locations for the regions below:
+**Q6.** Using the atlas + coordinates, find approximate locations in MNI coordinates (not voxel indices) for the regions below:
 
 ### Cortex
 - Inferior Frontal Gyrus: X ____ Y ____ Z ____
@@ -308,7 +308,7 @@ To make sure nothing gets missed, here is the complete set of questions you shou
 - **Q3.** Time series: What differences do you notice across voxels (stability, noise, artifacts)?
 - **Q4.** Brain volume: Report the approximate volume (mm³) and convert it to cm³.
 - **Q5.** Gray/white boundary: Choose an intensity threshold and explain why it is imperfect.
-- **Q6.** Atlas practice: Use coordinates + atlas labels to locate the listed cortical and subcortical regions.
+- **Q6.** Atlas practice: Use MNI coordinates + atlas labels to locate the listed cortical and subcortical regions.
 - **Q7.** Functional vs anatomical: Compare resolution, smoothness, contrast, and distortion.
 - **Q8.** Side-by-side slices: Compare Z=21 (functional) vs Z=55 (anatomical) and interpret the differences. (use the voxel indices, not MNI coordinates)
 - **Q9.** Volumes and orientation: How many volumes are in each image, what does “volume” mean, and why might researchers prefer one view/orientation over another?
