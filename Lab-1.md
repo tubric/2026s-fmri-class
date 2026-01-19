@@ -1,6 +1,6 @@
-# Lab 1: Exploring Brain Anatomy (and what MRI data look like)
+# Lab 1: Exploring Brain Anatomy
 
-## Learning Objectives
+## Learning objectives
 This lab will help you get comfortable **loading, viewing, and describing MRI/fMRI data**. By the end, you should be able to:
 
 - Load and view anatomical (3D) and functional (4D) MRI data in **fsleyes**
@@ -18,10 +18,10 @@ MRI cannot resolve individual neurons (they are on the order of micrometers), bu
 
 ---
 
-## Data Sets Used
+## Data organization
 ![Figure](images/lab1/image1.png)
 
-Most datasets in this course follow the **Brain Imaging Data Structure (BIDS)** standard:  
+**All datasets in this course follow the Brain Imaging Data Structure (BIDS) standard:**  
 https://bids.neuroimaging.io/
 
 BIDS makes files and folders easier to navigate. Each subject is in a folder like `sub-XXX`, and the main subfolders include:
@@ -33,7 +33,7 @@ Each NIfTI image (`.nii` or `.nii.gz`) is typically paired with a JSON file cont
 
 ---
 
-# 1) Viewing the brain in fsleyes
+# 1) Viewing MRI data in fsleyes
 
 In this lab you will view two types of MRI data:
 
@@ -44,16 +44,21 @@ You will use **fsleyes** (part of FSL) to view data in 3D or 4D, and to overlay 
 
 ---
 
-## 1.1 Download the MRI data (Neurodesk base terminal)
+## 1.1 Download the data
 
 In the **base terminal** in Neurodesk, download two OpenNeuro datasets with `datalad`.
 
 ```bash
+# NARPS dataset (Poldrack/Schonberg)
 datalad install https://github.com/OpenNeuroDatasets/ds001734.git
 cd ds001734
 datalad get sub-001
 datalad get ~/ds001734/derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz
 
+# go back to your home directory
+cd ~
+
+# SRNDNA dataset (Fareri/Smith)
 datalad install https://github.com/OpenNeuroDatasets/ds003745.git
 cd ds003745
 datalad get sub-104
@@ -62,9 +67,11 @@ datalad get sub-137
 
 ---
 
-## 1.2 Load the MRI data in fsleyes (FSL terminal)
+## 1.2 Open the data in fsleyes
 
-Run the commands below **in the FSL terminal**. Each `&` opens the viewer in the background so you can open multiple windows.
+**Option A (recommended): use the FSL terminal**
+- Open the **FSL** terminal in Neurodesk and run the commands below.
+- Each `&` opens the viewer in the background so you can open multiple windows.
 
 ```bash
 fsleyes ~/ds001734/derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz &
@@ -84,12 +91,18 @@ fsleyes ~/ds003745/sub-137/anat/sub-137_T1w.nii.gz &
 fsleyes ~/ds003745/sub-137/anat/sub-137_T2w.nii.gz &
 ```
 
-**Quick interpretation prompt:** sub-104 and sub-137 differ noticeably. One participant is significantly older than the other.  
-**Before you look anything up:** What visual evidence would you use to justify your guess?
+**Option B: load FSL tools from the base terminal**
+If you are *not* using the FSL terminal, you can usually load the FSL environment first (depending on your setup):
+
+```bash
+ml fsl
+```
+
+Then run the same `fsleyes ...` commands.
 
 ---
 
-## 1.3 Compare what you see (short responses)
+## 1.3 Compare what you see
 
 Display each dataset in its own window.
 
@@ -99,32 +112,31 @@ Display each dataset in its own window.
 **Q2. T1 vs. T2 (sub-104):** What features look *different*, and why?  
 (Think: contrast—what is bright vs. dark, and what tissue types those differences reveal.)
 
-> **At this point, you should work more independently. TAs/instructor are available as needed.**
+Optional (for in-class discussion): sub-104 and sub-137 differ noticeably. One participant is significantly older than the other.  
+What visual evidence would you use to justify your guess?
 
 ---
 
-# 2) Navigating anatomy with a standard brain template
+# 2) Navigating anatomy in a standard template
 
-Now open a standardized (“normalized”) template brain in MNI space:
+Now open a standardized template brain in MNI space:
 
 ```bash
+# if you're working through the FSL terminal:
 fsleyes /opt/fsl-6.0.7.16/data/standard/MNI152_T1_0.5mm.nii.gz &
+
+# alternatively, if you're working with fsl loaded in your base terminal:
+# << actually, this doesn't seem to be an option for this specific usecase >>
+
 ```
 
 ![Figure](images/lab1/image2.png)
 
-### Key ideas to understand here
-- MRI volumes have 3 spatial dimensions: **X (left–right), Y (posterior–anterior), Z (inferior–superior)**
-- Functional MRI adds a 4th dimension: **time**
-- fsleyes shows the brain from three standard views:
-  - **Sagittal** (side view)
-  - **Coronal** (front view)
-  - **Axial** (top view)
+### Key idea
+MRI volumes have 3 spatial dimensions: **X (left–right), Y (posterior–anterior), Z (inferior–superior)**.  
+Functional MRI adds a 4th dimension: **time**.
 
-Use your mouse or the coordinate fields to move through the brain.
-
-**Interpretation prompt:**  
-When you click a location, fsleyes gives coordinates. In neuroimaging papers, coordinates are one of the main “languages” people use to communicate findings. This is why learning to navigate images *matters*.
+Use your mouse or the coordinate fields in fsleyes to move through the brain.
 
 ---
 
@@ -149,30 +161,35 @@ What differences do you notice in the time series patterns?
 
 ---
 
-# 4) Measuring the brain (roughly)
+# 4) Measuring the brain
 
 MRI can be used to quantify brain structure (e.g., volume differences across individuals).
 
-In your **FSL terminal**, estimate the volume of the anatomical scan using `fslstats`:
+In your terminal, use `fslstats` to estimate the volume of the anatomical scan:
 
 ```bash
 fslstats ~/ds001734/derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz -V
 ```
 
 This returns two values:
-1) number of voxels in the image mask  
+1) number of **nonzero** voxels  
 2) total volume (in mm³)
+
+Before you run it, check what the command does:
+
+```bash
+fslstats -h
+```
 
 **Q4.** Report the approximate brain volume (mm³) and convert it to cm³.  
 (1 cm³ = 1000 mm³)
 
-**Deep thinking prompt:**  
-Is your estimated value closer to the volume of a soda can, a grapefruit, or a basketball?  
-What does that tell you about scale (and why fMRI voxels feel “big” compared to neurons)?
+Optional (for later): In real projects, you often compute volume *within an explicit brain mask*.  
+For example, `fslstats <image> -k <mask> -V`.
 
 ---
 
-# 5) Finding the gray/white boundary (intensity + uncertainty)
+# 5) Estimating the gray/white boundary
 
 A major anatomical distinction:
 - **Gray matter**: cell bodies, cortical ribbon (outer layer)
@@ -180,17 +197,18 @@ A major anatomical distinction:
 
 On T1-weighted images, white matter is usually brighter than gray matter.
 
-There are two ways to estimate the gray/white boundary:
+There are two reasonable ways to estimate the gray/white boundary:
 
-### Option A (quick + rough)
+### Approach A (quick + rough)
 Click a few locations in obvious gray matter and obvious white matter and compare intensities.  
 Try to find a “transition zone” where values change from gray → white.
 
-### Option B (histogram-based)
+### Approach B (histogram-based)
 Use: **View → Image histogram**  
 Click the wrench to adjust settings (suggested settings shown below).
 
-<img width="1655" height="968" alt="image" src="https://github.com/user-attachments/assets/8a0cbe41-e60d-42cb-9a24-2e69a4eb11c3" />
+![Figure](images/lab1/lab1-histogram.png)
+
 
 You should see:
 - a giant peak near 0 (air/background)
@@ -199,35 +217,38 @@ You should see:
 You can zoom the histogram range to focus on white matter  
 (e.g., ~370–430 in this particular image).
 
-<img width="1010" height="971" alt="image" src="https://github.com/user-attachments/assets/f2fb9436-c0ba-488a-a04a-3a79ad739788" />
 
-**Q5 (challenge—conceptual + quantitative):**  
-Pick a reasonable threshold that separates “mostly gray” from “mostly white.” Then answer:
+![Figure](images/lab1/lab1-histogram_thresholded.png)
+
+
+**Q5.** Pick a reasonable intensity threshold that separates “mostly gray” from “mostly white,” then answer:
 
 1) What threshold did you choose, and why?  
-2) What are *two* reasons your threshold will be imperfect?  
+2) What are two reasons your threshold will be imperfect?  
    (Hint: partial volume effects, scanner differences, intensity inhomogeneity, tissue mixtures.)
 
-*Optional extension:* Use `fslstats` to estimate how many voxels fall above your “white matter” threshold.
+Optional extension: Use `fslstats` to estimate how many voxels are above your threshold.
 
 ---
 
-# 6) Identifying anatomical locations with an atlas
+# 6) Identifying brain regions with an atlas
 
-Now return to the template brain:  
+Return to the template brain:  
 `MNI152_T1_0.5mm.nii.gz`
 
 To make structure identification easier, turn on an atlas:
 
 **Settings → Ortho View 1 → check “Atlases”**
 
-<img width="910" height="707" alt="image" src="https://github.com/user-attachments/assets/602c9392-02f2-4641-a716-fc2088287576" />
+![Figure](images/lab1/lab1-atlas_tools.png)
+
 
 Then:
 
 **Atlases → Atlas information… → select atlas (e.g., Harvard-Oxford Cortical) → Show/Hide**
 
-<img width="913" height="690" alt="image" src="https://github.com/user-attachments/assets/3fdca10e-e26b-4dba-bded-004ff525314b" />
+![Figure](images/lab1/lab1-atlas_tools-HO.png)
+
 
 When you click a voxel, the atlas provides the most likely label at that location.
 
@@ -253,18 +274,15 @@ When you click a voxel, the atlas provides the most likely label at that locatio
 - Right Accumbens: X ____ Y ____ Z ____
 - Left Pallidum: X ____ Y ____ Z ____
 
-**Deep thinking prompt:**  
-Pick one cortical region and one subcortical region. For each, write one sentence explaining a research question where that region might matter *and* what kind of task or contrast could plausibly engage it.
-
 ---
 
-# Summary Questions
+# 7) Wrap-up questions
 
 **Q7.** Visually compare functional vs anatomical images.  
 What do you notice about resolution, smoothness, contrast, and distortion?
 
-**Q8.** Set Z=21 for functional image `sub-001_task-MGT_run-01_bold.nii.gz`,  
-set Z=55 for anatomical image `sub-001_T1w.nii.gz`, and compare side-by-side.  
+**Q8.** Set Z=21 (voxel) for the functional image `sub-001_task-MGT_run-01_bold.nii.gz`,  
+set Z=55 (voxel) for the anatomical image `sub-001_T1w_preproc.nii.gz`, and compare side-by-side.  
 What differences stand out, and what do those differences imply for interpretation?
 
 **Q9.** How many volumes are in the anatomical scan? How many volumes are in the functional image?  
@@ -280,4 +298,24 @@ Z =
 
 ---
 
-[^1]: Other free programs exist (MRIcroN / MRIcroGL), and you may see them used in the literature. In this course, we’ll focus on FSL tools.
+
+# Question checklist (Q1–Q9)
+
+To make sure nothing gets missed, here is the complete set of questions you should answer in your submission:
+
+- **Q1.** T1 vs. T2 (sub-104): What features look *the same* across T1 and T2?
+- **Q2.** T1 vs. T2 (sub-104): What features look *different*, and why?
+- **Q3.** Time series: What differences do you notice across voxels (stability, noise, artifacts)?
+- **Q4.** Brain volume: Report the approximate volume (mm³) and convert it to cm³.
+- **Q5.** Gray/white boundary: Choose an intensity threshold and explain why it is imperfect.
+- **Q6.** Atlas practice: Use coordinates + atlas labels to locate the listed cortical and subcortical regions.
+- **Q7.** Functional vs anatomical: Compare resolution, smoothness, contrast, and distortion.
+- **Q8.** Side-by-side slices: Compare Z=21 (functional) vs Z=55 (anatomical) and interpret the differences. (use the voxel indices, not MNI coordinates)
+- **Q9.** Volumes and orientation: How many volumes are in each image, what does “volume” mean, and why might researchers prefer one view/orientation over another?
+
+---
+
+# What to submit
+Submit a document with your answers to **Q1–Q9**. Short answers are fine, but they should be specific enough that someone else could follow your reasoning.
+
+[^1]: Other free programs exist (MRIcroN / MRIcroGL), and you may see them used in the literature. In this course, we’ll mostly focus on FSL tools.
