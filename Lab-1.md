@@ -65,6 +65,48 @@ datalad get sub-104
 datalad get sub-137
 ```
 
+
+## 1.1.1 Fixing confusing filenames in FSLeyes: `datalad unlock`
+
+By default, DataLad (via git-annex) often stores large files in your dataset as **symlinks**. The filename in your BIDS folder looks normal, but the symlink points to the annex storage inside `.git/annex/objects/...`. Some tools resolve the symlink and end up displaying the long annex path instead of the friendly BIDS filename.
+
+If that happens in **FSLeyes**, you can convert a specific symlink into a regular file (in-place) using `datalad unlock`.
+
+### Step 1: Check whether the file is a symlink
+In the **base terminal**:
+
+```bash
+ls -l ~/ds001734/derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz
+# If it is a symlink, you will see an arrow (->) pointing into .git/annex/objects/...
+```
+
+### Step 2: Make sure the content is present
+```bash
+datalad get ~/ds001734/derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz
+```
+
+### Step 3: Unlock the file
+You have two equivalent options:
+
+**Option A (if you are inside the dataset):**
+```bash
+cd ~/ds001734
+datalad unlock derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz
+```
+
+**Option B (works from anywhere; avoids `NoDatasetFound`):**
+```bash
+datalad unlock -d ~/ds001734   ~/ds001734/derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz
+```
+
+### Step 4: Confirm it is no longer a symlink
+```bash
+ls -l ~/ds001734/derivatives/fmriprep/sub-001/anat/sub-001_T1w_preproc.nii.gz
+# You should no longer see the "->" symlink arrow.
+```
+
+Now proceed to the next section and open the same file in FSLeyes.
+
 ---
 
 ## 1.2 Open the data in fsleyes
