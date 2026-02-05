@@ -56,8 +56,10 @@ Quick sanity check:
 
 ```bash
 which bet
-echo $FSLDIR
+bet -h | head
 ```
+
+> Note: In some Neurodesk setups, `$FSLDIR` may be blank even when FSL is working. If `which bet` finds the command, you’re good.
 
 > **At this point, you should begin working on your own.**  
 > TAs and the instructor are available for help as needed.
@@ -97,12 +99,14 @@ In FEAT:
 1. Set the top-row buttons to:
    - **First-level analysis**
    - **Preprocessing**
-2. Go to the **Misc** tab and turn off **Progress Watcher**.
 
-![FEAT main window](images/lab3/media/image2.png)  
-![FEAT analysis selection](images/lab3/media/image3.png)  
-![Select “First-level analysis” and “Preprocessing”](images/lab3/media/image4.png)  
-![Turn off Progress Watcher](images/lab3/media/lab3_re1_line72.png)
+<img src="images/lab3/media/image4.png" alt="Figure" width="650" style="max-width:650px; width:100%; height:auto;" />
+
+2. In the **Misc** tab, decide what you want to do with **Progress Watcher**:
+   - **Leave it on (recommended):** FEAT will automatically open the HTML report when it finishes.
+   - **Turn it off:** fewer pop-ups, but you’ll need to open the report manually from your `.feat` folder.
+
+<img src="images/lab3/media/lab3_re1_line72.png" alt="Figure" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 **Q2.** When you switch FEAT to preprocessing-only, which modeling/reporting options become unavailable? Name one practical reason you might want preprocessing in a separate FEAT run from statistical modeling.
 
@@ -116,7 +120,7 @@ Go to the **Data** tab and set:
 - **Select 4D data:** `~/ds003745/sub-104/func/sub-104_task-trust_run-01_bold.nii.gz`
 - **Output directory:** `~/Lab_2/OUTPUT`
 
-![Data tab settings](images/lab3/media/lab3_line88.png)
+<img src="images/lab3/media/lab3_line88.png" alt="Data tab settings" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 **Q3.** After you select the 4D BOLD file, FEAT detects **Total volumes** and **TR**. What values does FEAT report? Based on those values, what is the total scan duration (in minutes)?
 
@@ -165,7 +169,7 @@ A convenient workflow is to keep one `fsleyes` window open for the raw BOLD file
 ## 5.2 Motion correction (MCFLIRT)
 In **Pre-stats**, enable **only** **Motion correction (MCFLIRT)**.
 
-![Motion correction setting (MCFLIRT)](images/lab3/media/lab3_line170.png)
+<img src="images/lab3/media/lab3_line170.png" alt="Motion correction setting (MCFLIRT)" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 **Q4.** Compare the raw BOLD data to the MCFLIRT output in `fsleyes` (scroll through volumes). Focus on tissue boundaries (brain edge, ventricles). What changed after correction? Based on the visual evidence, does it look like MCFLIRT did a reasonable job?
 
@@ -174,7 +178,7 @@ In **Pre-stats**, enable **only** **Motion correction (MCFLIRT)**.
 ## 5.3 Brain extraction on the functional (BET)
 In **Pre-stats**, enable **only** **BET brain extraction**.
 
-![Brain extraction setting (BET)](images/lab3/media/lab3_line140.png)
+<img src="images/lab3/media/lab3_line140.png" alt="Brain extraction setting (BET)" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 **Q5.** Compare the raw BOLD data to the BET output. Does the output look over-stripped (missing brain tissue), under-stripped (non-brain tissue retained), or reasonable? Name one downstream consequence of poor brain extraction.
 
@@ -187,7 +191,7 @@ In **Pre-stats**, enable **only** **Spatial smoothing**. Run three separate FEAT
 - **5 mm**
 - **15 mm**
 
-![Spatial smoothing kernel setting](images/lab3/media/lab3_line188.png)
+<img src="images/lab3/media/lab3_line188.png" alt="Spatial smoothing kernel setting" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 **Q6.** Compare the smoothing outputs to each other and to the raw data. What changes as the kernel increases? Describe what you see in (i) anatomical detail and (ii) apparent noise. Based on lecture, why can smoothing increase SNR, and what does it cost?
 
@@ -196,7 +200,7 @@ In **Pre-stats**, enable **only** **Spatial smoothing**. Run three separate FEAT
 ## 5.5 Temporal filtering (high-pass)
 In **Pre-stats**, enable **only** the **Highpass** option under **Temporal filtering** (use the default cutoff unless instructed otherwise).
 
-![High-pass filtering setting](images/lab3/media/lab3_line203.png)
+<img src="images/lab3/media/lab3_line203.png" alt="High-pass filtering setting" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 **Q7.** Compare the raw data to the high-pass filtered output using the time-series view in `fsleyes`. What kind of variability is reduced by high-pass filtering (think: slow drift), and what risk would an overly aggressive high-pass filter create?
 
@@ -208,13 +212,13 @@ For this step, you can leave all **Pre-stats** options off and focus on the **Re
 - **Main structural:** `~/Lab_2/OUTPUT/sub-104_T1w_brain.nii.gz`
 - **Standard:** the default MNI template (MNI152)
 
-![Registration tab settings](images/lab3/media/lab3_line217.png)
+<img src="images/lab3/media/lab3_line217.png" alt="Registration tab settings" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 Run FEAT. Then open the registration report:
 
 - `~/Lab_2/OUTPUT/<your_output_name>.feat/report_reg.html`
 
-![Example path to FEAT registration report](images/lab3/media/lab3_line227.png)
+<img src="images/lab3/media/lab3_line227.png" alt="Example path to FEAT registration report" width="650" style="max-width:650px; width:100%; height:auto;" />
 
 In the report, check whether boundaries and internal structures line up across:
 
