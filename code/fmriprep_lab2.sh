@@ -2,18 +2,11 @@
 # Lab 2 Supplement: fMRIPrep (minimal, module-based)
 #
 # Usage:
-#   bash fmriprep_lab2_MINIMAL_MNI6.sh 104
-#   bash fmriprep_lab2_MINIMAL_MNI6.sh sub-104
+#   bash fmriprep_lab2_MINIMAL_MNI6_v2.sh 104
+#   bash fmriprep_lab2_MINIMAL_MNI6_v2.sh sub-104
 #
-# Minimal on purpose:
-#   - load the fMRIPrep module
-#   - run one participant
-#   - write outputs to ~/Lab_2/
-#
-# Note on SUBJECTS_DIR (this is the bug you hit):
-#   Your traceback shows fMRIPrep failing because 'subjects_dir' points to a directory that does not exist
-#   (e.g., '/home/jovyan/freesurfer-subjects-dir'). Some registration utilities expect SUBJECTS_DIR to be an
-#   *existing* folder. Creating it is enough.
+# This is intentionally minimal. It fixes the crash you saw by ensuring
+# SUBJECTS_DIR points to an EXISTING directory before running fMRIPrep.
 
 set -euo pipefail
 
@@ -30,21 +23,13 @@ OUT_DIR="${OUT_DIR:-$HOME/Lab_2/fmriprep_out}"
 WORK_DIR="${WORK_DIR:-$HOME/Lab_2/fmriprep_work}"
 FS_LICENSE="${FS_LICENSE:-$HOME/.license}"
 
-# Modest defaults for lab machines (override via env vars if needed)
+# Resource knobs (keep modest for lab machines)
 NTHREADS="${NTHREADS:-8}"
 OMP_NTHREADS="${OMP_NTHREADS:-2}"
 MEM_MB="${MEM_MB:-20000}"
 
 # ---- Load fMRIPrep (module-based; no container pulls) ----
 ml fmriprep/25.1.3
-
-# ---- SUBJECTS_DIR fix ----
-# Prefer whatever SUBJECTS_DIR the module sets, but ensure it exists.
-# If it's unset, keep it contained inside the lab folder.
-if [[ -z "${SUBJECTS_DIR:-}" ]]; then
-  export SUBJECTS_DIR="$HOME/Lab_2/freesurfer_subjects"
-fi
-mkdir -p "$SUBJECTS_DIR"
 
 # ---- Required directories ----
 mkdir -p "$OUT_DIR" "$WORK_DIR"
@@ -60,21 +45,32 @@ if [[ ! -f "$FS_LICENSE" ]]; then
   exit 3
 fi
 
+# ---- Critical fix for the error you posted ----
+# Your traceback shows fMRIPrep failing because MRICoreg (a FreeSurfer interface
+# used during BOLD->T1w registration) receives a SUBJECTS_DIR that does not exist.
+# We do NOT run recon-all, but this directory must still exist.
+mkdir -p "$HOME/freesurfer-subjects-dir"
+
+# Use a lab-local SUBJECTS_DIR and ensure it exists.
+export SUBJECTS_DIR="$HOME/Lab_2/freesurfer_subjects"
+mkdir -p "$SUBJECTS_DIR"
+
 # ---- Run fMRIPrep ----
-# Output spaces: ONLY MNI152NLin6Asym (per your constraint).
-fmriprep \
-  "$BIDS_DIR" \
-  "$OUT_DIR" \
-  participant \
-  --participant-label "$SUB" \
-  --work-dir "$WORK_DIR" \
-  --fs-license-file "$FS_LICENSE" \
-  --fs-no-reconall \
-  --skip-bids-validation \
-  --output-spaces MNI152NLin6Asym:res-2 \
-  --nthreads "$NTHREADS" \
-  --omp-nthreads "$OMP_NTHREADS" \
-  --mem_mb "$MEM_MB"
+# Output spaces: ONLY MNI152NLin6Asym.
+SUBJECTS_DIR="$SUBJECTS_DIR" \
+  fmriprep \
+    "$BIDS_DIR" \
+    "$OUT_DIR" \
+    participant \
+    --participant-label "$SUB" \
+    --work-dir "$WORK_DIR" \
+    --fs-license-file "$FS_LICENSE" \
+    --fs-no-reconall \
+    --skip-bids-validation \
+    --output-spaces MNI152NLin6Asym:res-2 \
+    --nthreads "$NTHREADS" \
+    --omp-nthreads "$OMP_NTHREADS" \
+    --mem_mb "$MEM_MB"
 
 echo
 echo "Done."
