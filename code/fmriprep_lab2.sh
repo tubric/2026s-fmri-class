@@ -1,173 +1,173 @@
 #!/usr/bin/env bash
 # Lab 2 Supplement (fMRIPrep): run preprocessing for ONE participant
 #
-# Purpose
-#   - Run fMRIPrep on the class dataset (~/ds003745) for a single subject
-#   - Write ALL outputs to ~/Lab_2/ (so you do not modify the BIDS dataset)
-#   - Produce an HTML report + preprocessed BOLD + confounds you can compare to FEAT
+# What this script does
+#   - Loads the fMRIPrep module (no Docker pulls; uses the module-provided setup)
+#   - Runs fMRIPrep on the class BIDS dataset (~/ds003745) for a single subject
+#   - Writes ALL outputs to ~/Lab_2/ (so you do not modify the BIDS dataset)
+#   - Produces an HTML report + preprocessed BOLD + confounds you can compare to FEAT
 #
-# Usage
-#   bash code/fmriprep_lab2.sh 104
-#   bash code/fmriprep_lab2.sh sub-104
+# Typical usage
+#   bash fmriprep_lab2.sh 104
+#   bash fmriprep_lab2.sh sub-104
 #
 # Optional overrides (no editing required)
-#   FMRIPREP_VERSION=25.1.3 NTHREADS=6 MEM_MB=12000 bash code/fmriprep_lab2.sh 104
+#   FMRIPREP_VERSION=25.1.3 NTHREADS=6 MEM_MB=20000 bash fmriprep_lab2.sh 104
 #
 # Requirements
 #   - BIDS dataset:        ~/ds003745
-#   - FreeSurfer license: ~/.license
+#   - FreeSurfer license: ~/.license  (required even if we skip recon-all)
 #
-# Notes
-#   - This script prefers running the official fMRIPrep container via Apptainer.
-#     That avoids older Neurodesk images that may be disabled for security reasons.
-#   - The first run may take longer because Apptainer may need to pull the container.
-#   - We use --fs-no-reconall to keep runtime manageable for a lab.
-#   - The work directory can be large; you may delete ~/Lab_2/fmriprep_work afterward.
+# Notes for this class
+#   - We use --fs-no-reconall to keep runtime manageable.
+#   - fMRIPrep writes a lot of intermediate files. The work directory can be big.
+#     If you need space later, you can delete: ~/Lab_2/fmriprep_work
 
 set -euo pipefail
 
 ###############################################################################
-# 0) Inputs + paths (edit only if your class dataset lives somewhere else)
+# 0) Participant label handling
 ###############################################################################
-sub="${1:?Usage: $0 <SUBJECT_ID>  (e.g., 104 or sub-104)}"
-sub="${sub#sub-}"   # allow either "104" or "sub-104"
+if [[ $# -lt 1 ]]; then
+  echo "Usage: bash $0 104   (or: bash $0 sub-104)"
+  exit 1
+fi
 
-BIDS_DIR="${HOME}/ds003745"
-OUT_DIR="${HOME}/Lab_2/fmriprep_out"
-WORK_DIR="${HOME}/Lab_2/fmriprep_work"
+# Accept "104" or "sub-104" and normalize to "104"
+SUB="${1#sub-}"
+if ! [[ "$SUB" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: Participant label should be numeric (e.g., 104 or sub-104). Got: $1"
+  exit 2
+fi
 
-# FreeSurfer license MUST be here
-FS_LIC="${HOME}/.license"
+###############################################################################
+# 1) Paths and resources (safe defaults for lab machines)
+###############################################################################
+BIDS_DIR="${BIDS_DIR:-$HOME/ds003745}"
 
-# fMRIPrep version to use (official Docker image tag)
+# Keep outputs OUTSIDE the dataset directory (important for class / reproducibility)
+OUT_DIR="${OUT_DIR:-$HOME/Lab_2/fmriprep_out}"
+WORK_DIR="${WORK_DIR:-$HOME/Lab_2/fmriprep_work}"
+
+# FreeSurfer license file (required by fMRIPrep; it will error without it)
+FS_LICENSE="${FS_LICENSE:-$HOME/.license}"
+
+# Resource knobs (can be overridden via environment variables)
 FMRIPREP_VERSION="${FMRIPREP_VERSION:-25.1.3}"
-
-# If you pre-pulled a .sif locally, the script will use it automatically.
-SIF_PATH="${HOME}/Lab_2/fmriprep_${FMRIPREP_VERSION}.sif"
-
-###############################################################################
-# 1) Fail-fast checks (helps students debug quickly)
-###############################################################################
-if [[ ! -d "${BIDS_DIR}" ]]; then
-  echo "ERROR: BIDS directory not found: ${BIDS_DIR}" >&2
-  exit 1
-fi
-
-if [[ ! -d "${BIDS_DIR}/sub-${sub}" ]]; then
-  echo "ERROR: Subject folder not found: ${BIDS_DIR}/sub-${sub}" >&2
-  echo "Check the subject ID you provided (expected something like sub-104)." >&2
-  exit 1
-fi
-
-if [[ ! -r "${FS_LIC}" ]]; then
-  echo "ERROR: FreeSurfer license not found/readable at: ${FS_LIC}" >&2
-  echo "Fix: Save your FreeSurfer license file as ~/.license" >&2
-  exit 1
-fi
-
-mkdir -p "${OUT_DIR}" "${WORK_DIR}"
-
-###############################################################################
-# 2) Resource parameters (safe defaults for teaching)
-###############################################################################
-# You can override these without editing the script, e.g.:
-#   NTHREADS=6 MEM_MB=12000 bash code/fmriprep_lab2.sh 104
 NTHREADS="${NTHREADS:-12}"
-OMP_NTHREADS="${OMP_NTHREADS:-1}"
+OMP_NTHREADS="${OMP_NTHREADS:-2}"
 MEM_MB="${MEM_MB:-30000}"
 
-# Avoid oversubscribing CPU threads (especially if multiple jobs run on one machine)
-export OMP_NUM_THREADS=1
-export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-
 ###############################################################################
-# 3) Decide how to run fMRIPrep (Apptainer preferred)
-###############################################################################
-# Why Apptainer?
-#   - Neurodesk may disable older containers for security reasons.
-#   - Using the official nipreps/fmriprep:<version> container is predictable and current.
-#
-# What gets mounted into the container:
-#   /data  -> your BIDS dataset (read-only)
-#   /out   -> output directory (derivatives)
-#   /work  -> scratch / intermediate files
-#   license-> mounted to /opt/freesurfer/license.txt
-
-IMAGE="docker://nipreps/fmriprep:${FMRIPREP_VERSION}"
-if [[ -f "${SIF_PATH}" ]]; then
-  # If you (or an instructor) pre-pulled a SIF, use it to avoid re-downloading.
-  IMAGE="${SIF_PATH}"
-fi
-
-###############################################################################
-# 4) Run
+# 2) Quick checks (fail early with useful messages)
 ###############################################################################
 echo "== fMRIPrep (Lab 2 supplement) =="
-echo "  Subject:          ${sub}"
-echo "  BIDS (host):      ${BIDS_DIR}"
-echo "  OUT  (host):      ${OUT_DIR}"
-echo "  WORK (host):      ${WORK_DIR}"
-echo "  FreeSurfer lic:   ${FS_LIC}"
-echo "  fMRIPrep version: ${FMRIPREP_VERSION}"
-echo "  Apptainer image:  ${IMAGE}"
-echo "  NTHREADS:         ${NTHREADS}"
-echo "  OMP_NTHREADS:     ${OMP_NTHREADS}"
-echo "  MEM_MB:           ${MEM_MB}"
-echo ""
+echo "  Subject:           $SUB"
+echo "  BIDS:              $BIDS_DIR"
+echo "  OUT:               $OUT_DIR"
+echo "  WORK:              $WORK_DIR"
+echo "  FreeSurfer license:$FS_LICENSE"
+echo "  fMRIPrep module:   fmriprep/$FMRIPREP_VERSION"
+echo "  NTHREADS:          $NTHREADS"
+echo "  OMP_NTHREADS:      $OMP_NTHREADS"
+echo "  MEM_MB:            $MEM_MB"
+echo
 
-if command -v apptainer >/dev/null 2>&1; then
-  # Optional instructor convenience: pre-pull once to create a local SIF
-  #   apptainer pull "${SIF_PATH}" "docker://nipreps/fmriprep:${FMRIPREP_VERSION}"
-  #
-  # Then the script will automatically use ${SIF_PATH} next time.
-
-  apptainer run --cleanenv \
-    -B "${BIDS_DIR}:/data:ro" \
-    -B "${OUT_DIR}:/out" \
-    -B "${WORK_DIR}:/work" \
-    -B "${FS_LIC}:/opt/freesurfer/license.txt:ro" \
-    "${IMAGE}" \
-    /data /out participant \
-      --participant-label "${sub}" \
-      --stop-on-first-crash \
-      --fs-license-file /opt/freesurfer/license.txt \
-      --fs-no-reconall \
-      --output-spaces T1w MNI152NLin2009cAsym:res-2 \
-      --nthreads "${NTHREADS}" \
-      --omp-nthreads "${OMP_NTHREADS}" \
-      --mem-mb "${MEM_MB}" \
-      --notrack \
-      -w /work
-
-else
-  # Fallback: if Apptainer is not available, try a local fmriprep installation.
-  # (On many Neurodesk setups, this may still point to a container wrapper.)
-  if ! command -v fmriprep >/dev/null 2>&1; then
-    echo "ERROR: apptainer not found AND fmriprep not found on PATH." >&2
-    echo "Fix: run this inside Neurodesk (which includes apptainer), or load an fmriprep module." >&2
-    exit 1
-  fi
-
-  fmriprep "${BIDS_DIR}" "${OUT_DIR}" participant \
-    --participant-label "${sub}" \
-    --stop-on-first-crash \
-    --fs-license-file "${FS_LIC}" \
-    --fs-no-reconall \
-    --output-spaces T1w MNI152NLin2009cAsym:res-2 \
-    --nthreads "${NTHREADS}" \
-    --omp-nthreads "${OMP_NTHREADS}" \
-    --mem-mb "${MEM_MB}" \
-    --notrack \
-    -w "${WORK_DIR}"
+# Dataset sanity checks
+if [[ ! -d "$BIDS_DIR" ]]; then
+  echo "ERROR: BIDS dataset not found at: $BIDS_DIR"
+  echo "       (Expected ~/ds003745 for this class)"
+  exit 3
 fi
 
-echo ""
+if [[ ! -d "$BIDS_DIR/sub-$SUB" ]]; then
+  echo "ERROR: Subject folder not found: $BIDS_DIR/sub-$SUB"
+  exit 4
+fi
+
+if [[ ! -f "$FS_LICENSE" ]]; then
+  echo "ERROR: FreeSurfer license file not found at: $FS_LICENSE"
+  echo "       Ask the instructor/TA where your license file should live."
+  exit 5
+fi
+
+# Create output/work directories (safe; does nothing if they already exist)
+mkdir -p "$OUT_DIR" "$WORK_DIR"
+
+###############################################################################
+# 3) Load the fMRIPrep module (THIS is the key change)
+###############################################################################
+# Neurodesk typically provides 'ml' (Lmod) for module loading.
+# If you opened a terminal that doesn't have modules, open the "FSL terminal"
+# or another module-enabled terminal in Neurodesk.
+if command -v ml >/dev/null 2>&1; then
+  ml fmriprep/"$FMRIPREP_VERSION"
+else
+  echo "ERROR: 'ml' command not found (module system unavailable in this shell)."
+  echo "Try opening the module-enabled terminal in Neurodesk and rerun:"
+  echo "  ml fmriprep/$FMRIPREP_VERSION"
+  echo "  bash $0 $1"
+  exit 6
+fi
+
+# Confirm fmriprep is now on PATH
+if ! command -v fmriprep >/dev/null 2>&1; then
+  echo "ERROR: fmriprep not found on PATH after loading the module."
+  echo "Check that the module name/version exists: fmriprep/$FMRIPREP_VERSION"
+  exit 7
+fi
+
+echo "fMRIPrep executable:"
+which fmriprep
+echo
+
+###############################################################################
+# 4) Run fMRIPrep
+###############################################################################
+# The command is split across lines for readability.
+# If you are curious about any flag, run: fmriprep --help
+#
+# IMPORTANT:
+#   - We do not edit the dataset in-place.
+#   - The output is written to OUT_DIR in BIDS-derivatives format.
+#
+# Common useful outputs after the run:
+#   - HTML report: OUT_DIR/fmriprep/sub-<ID>.html
+#   - Preproc BOLD: OUT_DIR/fmriprep/sub-<ID>/func/*desc-preproc_bold.nii.gz
+#   - Confounds: OUT_DIR/fmriprep/sub-<ID>/func/*desc-confounds_timeseries.tsv
+#
+# If you want MNI outputs, include an MNI space in --output-spaces (we do).
+# 'res-2' keeps file sizes reasonable for a lab.
+
+set -x
+fmriprep \
+  "$BIDS_DIR" \
+  "$OUT_DIR" \
+  participant \
+  --participant-label "$SUB" \
+  --work-dir "$WORK_DIR" \
+  --fs-license-file "$FS_LICENSE" \
+  --fs-no-reconall \
+  --skip-bids-validation \
+  --output-spaces MNI152NLin2009cAsym:res-2 T1w \
+  --nthreads "$NTHREADS" \
+  --omp-nthreads "$OMP_NTHREADS" \
+  --mem_mb "$MEM_MB" \
+  --stop-on-first-crash
+set +x
+
+###############################################################################
+# 5) Print "where to look next" hints for students
+###############################################################################
+echo
 echo "== Done =="
 echo "HTML report:"
-echo "  ${OUT_DIR}/fmriprep/sub-${sub}.html"
-echo ""
-echo "Preprocessed BOLD (examples; exact filename depends on spaces/output options):"
-echo "  ${OUT_DIR}/fmriprep/sub-${sub}/func/*desc-preproc_bold.nii.gz"
-echo ""
+echo "  $OUT_DIR/fmriprep/sub-${SUB}.html"
+echo
+echo "Preprocessed BOLD (examples; exact filename depends on spaces/options):"
+echo "  $OUT_DIR/fmriprep/sub-${SUB}/func/*desc-preproc_bold.nii.gz"
+echo
 echo "Confounds:"
-echo "  ${OUT_DIR}/fmriprep/sub-${sub}/func/*desc-confounds_timeseries.tsv"
+echo "  $OUT_DIR/fmriprep/sub-${SUB}/func/*desc-confounds_timeseries.tsv"
+echo
+echo "Tip: open the HTML report in Firefox by pasting the full path into the address bar."
