@@ -81,7 +81,9 @@ If a command “doesn’t exist,” you are probably in the wrong terminal.
 >
 > ![](https://github.com/user-attachments/assets/b988bf15-9a75-4e75-9a47-0da4b5c89e0a)
 
-## Step 4 — Install DataLad (base terminal)
+## Step 4 — Install DataLad (very rare)
+Not sure if this is a real problem, but during testing, we think we observed a case where `datalad` didn't work "out of the box", but I don't think that was reproduced. However, if you encounter that issue, tell the instructor/TA and use this workaround. 
+
 Open a **base terminal**, then run:
 
 ```bash
@@ -149,6 +151,20 @@ If you installed something in the **base terminal**, it will not necessarily app
 When in doubt:
 - **General tools** → base terminal
 - **FSL tools** → FSL terminal
+
+## 3) Viewing HTML reports (fMRIPrep, etc.)
+Some HTML outputs (especially reports that rely on JavaScript and animations, like the **fMRIPrep** report) may not render correctly when opened directly from within the Neurodesktop graphical environment. In those cases, open the HTML report through the **Jupyter Notebook/Lab interface**, which serves the file in a normal browser tab.
+
+**General process**
+1. Leave Neurodesktop running, but switch back to your Neurodesk **hub** page in the browser (Play or EDU).
+2. Launch **Jupyter** (Jupyter Notebook or JupyterLab) from the hub.
+3. In Jupyter’s file browser, navigate to the folder where you saved your outputs (ideally the **Storage** folder).
+4. Locate the report (for fMRIPrep, look for a file like `sub-*.html` inside your fMRIPrep output directory).
+5. Open the HTML in a browser-rendered view:
+   - If clicking the file renders the report, you are done.
+   - If it opens as raw HTML text, use the file’s context menu to **open in a new browser tab** (or download it and open it in Firefox/Chrome).
+
+**Tip:** If the report uses pop-ups or embedded content, your browser may block parts of it. If something looks “blank,” try allowing pop-ups for the Neurodesk domain and reload the page.
 
 ---
 
