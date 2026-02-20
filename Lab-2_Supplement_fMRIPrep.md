@@ -81,6 +81,8 @@ mkdir -p ~/Lab_2/fmriprep_work
 Run:
 
 ```bash
+cd ~/2026s-fmri-class   # go to the repository
+git pull    # grab the latest and greatest from GitHub 
 bash code/fmriprep_lab2.sh 104
 ```
 
@@ -204,14 +206,14 @@ That’s it.
 ---
 
 
-## Troubleshooting checklist (quick)
+## Troubleshooting checklist
 
 - **`ml: command not found`**
   - Open a module-enabled terminal in Neurodesk (the same kind you used for FSL), then run:
     ```bash
     ml fmriprep/25.1.3
     ```
-- **FreeSurfer `SUBJECTS_DIR` error (like the one we saw in class)**
+- **FreeSurfer `SUBJECTS_DIR` error (like the one I saw during testing)**
   - Create the directory and rerun:
     ```bash
     mkdir -p ~/Lab_2/freesurfer_subjects
