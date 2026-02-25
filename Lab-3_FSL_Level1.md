@@ -1,334 +1,416 @@
-# Lab 4: Running the analysis -- L1 stats
+# Lab 3: First-level statistics in FSL (FEAT)
 
-## Learning Objectives
+## Learning objectives
+In lecture, we covered core ideas behind the General Linear Model (GLM), the BOLD response, and convolution. In this lab, you will apply those ideas by running **first-level (Level 1 / L1) statistics** in **FSL FEAT**.
 
-We\'ve already covered concepts like the General Linear Model, the BOLD
-response, and convolution. Today, you will broadly learn how to perform
-individual level stats in FSL (a.k.a., Level 1 or L1 statistics). After
-this lab activity, you should be able to do the following:
+By the end, you should be able to:
 
-- Create timing files that describe a design matrix
+- Create and use **3-column timing files** to build a design matrix
+- Specify **EVs** (explanatory variables) and **contrasts** in FEAT
+- Apply (and compare) **multiple-comparisons correction** options in FEAT
+- Navigate and interpret the main sections of the **FEAT HTML report**
 
-- Estimate the design matrix and apply contrasts
+**Notes and reminders**
+- All questions are at the **end** of the document.
+- You may work with a partner, but everyone submits their **own** assignment.
+- Use the in-class discssion board forum for questions and shared troubleshooting.
+- **Your submission must include screenshots** (see “What to submit”).
 
-- Apply corrections for multiple comparisons
+---
 
-- Understand and interpret all FEAT output
+## Before you begin
 
-*Notes and reminders: First, for this lab, all of the questions are at
-the end of the document (none are embedded within the document as we
-have done before). Second, you can work with a partner, but everyone is
-responsible for submitting the assignment. Third, remember that you
-should use the "in-class 'NeuroStars' forum" for asking questions and
-sharing knowledge.*
+### Folder structure (outputs)
+Keep your work separate from the OpenNeuro datasets. Create a lab output folder:
 
-## 1.  Downloading some example data
+```bash
+mkdir -p ~/Lab_3/OUTPUT
+```
 
-We will process two data today. Sequence Pilot data and food viewing
-data, both from OpenNeuro. Follow the **code and instructions** below to
-download the data to your virtual machine.
+### Terminals (Neurodesk)
+You will typically use two terminals:
 
-- Make output directories for lab 4 in either kind of terminal
-`mkdir ~/Lab_4/`
+- **Base terminal:** for `datalad`, `git`, and basic shell commands
+- **FSL terminal:** for FSL tools (e.g., `bet`, `Feat`, `fsleyes`)
 
-### 1.1 Obtain sequence Pilot Data (event-related design): 
+If you are in the base terminal and need FSL, you can often run:
+
+```bash
+ml fsl
+```
+
+---
+
+## 1) Downloading the example datasets
+
+Today you will work with two OpenNeuro datasets:
+
+- **ds005085 (Sequence Pilot):** event-related design (used for an in-class walkthrough)
+- **ds000157 (Food viewing):** block design (you will run this on your own)
+
+### 1.1 Obtain sequence pilot data (event-related design)
 
 ![](images/lab4/media/image1.png)
 
-Enter this in your based terminal:
+In your **base terminal**:
+
+```bash
+cd ~
+datalad clone https://github.com/OpenNeuroDatasets/ds005085.git
+cd ds005085
+datalad get sub-10015
 ```
-cd ~; datalad clone https://github.com/OpenNeuroDatasets/ds005085.git;
-cd ds005085/;
-datalad get sub-10015;
+
+Now create a skull-stripped anatomical image (once) in your **FSL terminal**:
+
+```bash
+bet ~/ds005085/sub-10015/anat/sub-10015_T1w.nii.gz \
+    ~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz
 ```
 
-Then switch to you fsl terminal:
-`bet ~/ds005085/sub-10015/anat/sub-10015_T1w.nii.gz ~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz # brain extracting for anatomical image`
+You will also need two timing files (3-column format) for **left** and **right** button presses. Download them onto your Neurodesk VM and move them into:
 
-- Download the txt file of [left button press](https://github.com/DVSneuro/2025-fmri-class/blob/main/Utilities/_guess_allLeftButton.txt)
-  and [right button press](https://github.com/DVSneuro/2025-fmri-class/blob/main/Utilities/_guess_allRightButton.txt) on your Neurodesk virtual machine
-  and move them to `~/ds005085/sub-10015/func/`
+`~/ds005085/sub-10015/func/`
 
-The data in the sub-10015 folder that we are going to use:
-- Neural
-> - Anatomical: ~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz
-> - BOLD:~/ds005085/sub-10015/func/sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz
+- [left button press](https://github.com/DVSneuro/2025-fmri-class/blob/main/Utilities/_guess_allLeftButton.txt)
+- [right button press](https://github.com/DVSneuro/2025-fmri-class/blob/main/Utilities/_guess_allRightButton.txt)
 
-- Events:
+**Files you will use (sub-10015):**
 
-> - ~/ds005085/sub-10015/func/_guess_allRightButton.txt
-> - ~/ds005085/sub-10015/func/_guess_allLeftButton.txt
+- **Anatomical:** `~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz`  
+- **BOLD:** `~/ds005085/sub-10015/func/sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz`  
+- **Events:**
+  - `~/ds005085/sub-10015/func/_guess_allLeftButton.txt`
+  - `~/ds005085/sub-10015/func/_guess_allRightButton.txt`
 
-### Obtain OpenNeuro food-viewing data (block design):
+---
+
+### 1.2 Obtain OpenNeuro food-viewing data (block design)
 
 ![](images/lab4/media/image2.png)
-in your terminal:
 
+In your **base terminal**:
+
+```bash
+cd ~
+datalad clone https://github.com/OpenNeuroDatasets/ds000157.git
+cd ds000157
+datalad get sub-01
 ```
-cd ~;
-datalad clone https://github.com/OpenNeuroDatasets/ds000157.git;
-cd ds000157/;
-datalad get sub-01;
-```
-<!-- -->
 
-- You also need to download the BIDSto3col.sh file to make three column
-  files for the second food viewing dataset (see Section 4)
+You will later create 3-column timing files from the BIDS `_events.tsv` file using `BIDSto3col.sh` (Section 4).
 
-We'll quickly work through the sequence pilot data (motor example)
-together, and then you'll work through the OpenNeuro data on your own.
+---
 
-## 2. Running L1 stats in FEAT:
+## 2) Running first-level statistics in FEAT (walkthrough: ds005085)
 
-### 2.1. Open FEAT:
+We will run the sequence pilot dataset together first, then you will run the food-viewing dataset on your own.
 
-1.  Use `Feat &` to call Feat from the terminal.
+### 2.1 Open FEAT
 
-2.  Keep the default settings of **First-level analysis** and **Full
-    analysis** are selected at the top of the Feat window.
+1. In your **FSL terminal**, launch FEAT:
+   - `Feat &`
 
-3.  You may want to close 'Progress watcher' under 'Misc' tab
+2. At the top of the FEAT window, keep:
+   - **First-level analysis**
+   - **Full analysis**
 
-### 2.2. Data tab:
+3. In the **Misc** tab, you may close **Progress watcher** if you prefer fewer pop-ups.
 
-- Click the **4D data** button & Navigate to `~/ds005085/sub-10015/func/sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz`. This is the BOLD data that we are analyzing.
-- Output directory: `～/Lab_4/OUTPUT`
+---
+
+### 2.2 Data tab (inputs + outputs)
+
+- **Select 4D data:**  
+  `~/ds005085/sub-10015/func/sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz`
+- **Output directory:**  
+  `~/Lab_3/OUTPUT/` (choose a clear output name, e.g., `seqpilot_L1`)
 
 ![](images/lab4/media/lab4_97.png)
 
-
 ![](images/lab4/media/lab4_98.png)
 
+---
 
+### 2.3 Pre-stats tab (preprocessing choices)
 
-### 2.3. Pre-stats tab:
+This run includes basic preprocessing (similar to Lab 2). Select the following options:
 
-This page allows us to specify the preprocessing that we\'re running.
-We\'ll use the same steps from Lab3. This time, select all given
-options.
+- **Motion correction:** MCFLIRT  
+- **Brain extraction:** BET  
+- **Spatial smoothing:** 5 mm FWHM  
+- **Temporal filtering:** Highpass  
+- **Slice timing correction:** Regular down (n-1, n-2, …, 0)
 
-5.  Select:
-
-    a.  **MCFLIRT** for Motion correction
-  
-    b.  **BET** for brain extraction
-  
-    c.  **5** for Spatial smoothing FWHM (mm)
-  
-    d.  **Highpass** for Temporal filtering
-  
-    e.  **Regular down(n-1,n-2,\...,0)** for Slice timing correction: we
-    need to do slice timing correction here since it is an event-related
-    design whose slices were collected in descending order.
-
+For this dataset, slice timing correction is reasonable because the design is event-related and slices were acquired in a descending order.
 
 ![](images/lab4/media/lab4_121.png)
 
+---
 
-### 2.4. Registration tab:
+### 2.4 Registration tab (functional → structural → standard)
 
-6. Select the **Main structural image option**
-  a.  Click on the folder icon & navigate to the
-    ~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz image.
-  b.  Select the **Normal search** and **BBR options**
+Set the **Main structural image** to:
 
-Leave default options for **Standard space option.**
+`~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz`
 
-The default image should be **MNI152_T1_2mm_brain** with linear
-registration options **Normal search** and **12 DOF**.
+Then choose:
+- **Normal search**
+- **BBR**
+
+Keep the default **Standard space** (typically **MNI152_T1_2mm_brain**, with **12 DOF** linear registration).
 
 ![](images/lab4/media/lab4_136.png)
 
+---
 
-### 2.5. Stats tab:
+### 2.5 Stats tab (EVs + contrasts)
 
-7\. Click **Full model setup**: a General Linear Model Window should
-open
+Click **Full model setup** to open the GLM window.
 
-  a.  Set the **Number of original EVs** to 2.
-  b.  Click the **EV1** tab and make the following selections:
-  <!-- -->
-   i.  **EV name** : Left 
-   
-   ii. **Basic shape**: Custom (3 column format)
-  
-  iii. **Filename**: Select the folder icon and navigate to:
-         `~/ds005085/sub-10015/func/_guess_allLeftButton.txt`  
-    
-  iv. **Convolution**: Double-Gamma HRF
-    
-   v.  **DE-SELECT the option** \"Add temporal derivative\"
+#### A) EV setup
+Set **Number of original EVs** to **2**.
 
-(Keep the option \"Apply temporal filtering\")
+**EV1**
+- EV name: **Left**
+- Basic shape: **Custom (3 column format)**
+- Filename: `~/ds005085/sub-10015/func/_guess_allLeftButton.txt`
+- Convolution: **Double-Gamma HRF**
+- **Turn off**: “Add temporal derivative”
+- Keep: “Apply temporal filtering”
 
 ![](images/lab4/media/lab4_159.png)
 
-  
-  c.  Click the **EV2** tab and make the following selections:
-   <!-- -->
-  i. **EV name**: Right
-    
-  ii. **Basic shape**: Custom (3 column format)
-  
-  iii. **Filename**: select the folder icon and navigate to
-         `~/ds005085/sub-10015/func/_guess_allRightButton.txt`
-         
-  iv. **Convolution**: Double-Gamma HRF
-  
-  v.  **DE-SELECT the option** \"Add temporal derivative\"
-
-(Keep the option Apply temporal filtering)
+**EV2**
+- EV name: **Right**
+- Basic shape: **Custom (3 column format)**
+- Filename: `~/ds005085/sub-10015/func/_guess_allRightButton.txt`
+- Convolution: **Double-Gamma HRF**
+- **Turn off**: “Add temporal derivative”
+- Keep: “Apply temporal filtering”
 
 ![](images/lab4/media/lab4_177.png)
 
-8\. Select the **Contrasts & F-tests** tab
+#### B) Contrasts
+Go to **Contrasts & F-tests**.
 
-  a.  Increase the number of contrasts to **5** you can use the up arrow
-    key.
+Increase the number of contrasts to **5**. A reasonable set for this dataset is:
 
-  b.  For OC1-OC5 reference the table below for the title and EV values.
-    Type into the box for **Title** and use the up and down arrows for
-    **EV1** & **EV2**.
+| Contrast title | EV1 (Left) | EV2 (Right) |
+|---|---:|---:|
+| Left (vs baseline) | 1 | 0 |
+| Right (vs baseline) | 0 | 1 |
+| Left > Right | 1 | -1 |
+| Right > Left | -1 | 1 |
+| Mean of Left+Right | 1 | 1 |
 
-**(NOTE: OC\'s 2 and 4 include -1)**
+**Note:** Contrasts with **−1** are difference contrasts (comparisons).
 
-Select **Done**. A window displaying the model should popup. It should
-look like the following picture. Click the \'**x**\' on the top corner
-to close the window.
+Select **Done**, then close the model-view window when it appears.
 
 ![Table Description automatically generated with low
 confidence](images/lab4/media/image9.png)
 ![](images/lab4/media/image10.png)
 
-### 2.6. Post-stats tab:
+---
 
-Leave the default settings. Check that they are the same as in the
-picture below.
+### 2.6 Post-stats tab (thresholding + corrections)
+
+Leave the default settings as shown:
 
 ![](images/lab4/media/lab4_203.png)
 
+**Important:** The **Thresholding** section is where you choose voxel-based or cluster-based correction.
 
-Note "Thresholding" is where cluster-extent and voxel height-based
-correction can be selected.
+Click **Go** to run the analysis.
 
-Press **Go** on the bottom left. Copy and paste the output log directory
-`~/Lab_4/OUTPUT_YOUR_TAG.feat/report_log.html` to your
-Edge browser to view report.
+After FEAT starts, open the log/report in your browser (Edge in Neurodesk):
 
-## 3. Viewing the output
+`~/Lab_3/OUTPUT/<your_output_name>.feat/report_log.html`
 
-The Feat report should automatically appear so you can track the
-progress of your analysis. This will take about 15 minutes to complete.
+---
 
-In the meantime, we will review a report of analyses that we have
-pre-run for this subject together.
+## 3) Viewing and QC’ing the FEAT output (ds005085)
 
-This page tells you exactly what steps have been run. You can review
-this page to look for errors and know on what step the error occurred.
+The FEAT report is your primary QC tool. Use it to confirm that the analysis ran correctly and that outputs make sense.
+
+This page summarizes what FEAT ran and where files are stored:
 
 ![](images/lab4/media/image12.png)
 
-###  3.1 Registration
-
-This is the same Registration page that we viewed as part of
-pre-processing. We still want to visually check that our registration
-was reasonable and didn\'t \"cut out\" large parts of the brain.
+### 3.1 Registration
+Check that functional → structural and structural → standard alignment are reasonable and do not cut off large parts of the brain.
 
 Sequence pilot: ![](images/lab4/media/image13.png)
 
 ### 3.2 Pre-stats
-
-These plots give us a visual representation of the participant\'s
-movement throughout the run in terms of **Rotations**, **Translations**,
-and **Absolute Displacement**.
+Review motion estimates (**rotations**, **translations**, **absolute displacement**) for large spikes or sustained drift.
 
 Sequence pilot: ![](images/lab4/media/image14.png)
 
-### 3.3. Stats
-
-This page displays the Design Matrix as well as the Covariance & Design
-Efficiency matrices.
-
-The Design Matrix is a visual representation of the task we modeled.
-Here the participant switched between pressing a button with their Left
-hand and then their Right hand.
-
-The Covariance Matrix allows us to see how easy or difficult it will be
-to pull apart the effects related to each Independent Variable and an
-estimation of the effect size we will need to see each contrast.
+### 3.3 Stats
+Inspect the **design matrix**, **covariance**, and **design efficiency**.
 
 Sequence pilot: ![](images/lab4/media/image15.png)
 
-### 3.4 Post-Stats
+### 3.4 Post-stats
+Inspect thresholded activation maps for each contrast. Pay attention to:
+- whether activations are neuroanatomically plausible
+- how sensitive results are to the thresholding method
 
-The Post stats page shows us a picture (in radiological view) of which
-areas were significantly active given each specified contrast.
-
-Sequence pilot
+Sequence pilot:
 
 ![](images/lab4/media/image16.png)
 
 ![](images/lab4/media/image17.png)
 
-**You've learnt how to run L1 for event-related designs and read
-outputs. Now run L1 for the OpenNeuro food-viewing data (block design)
-on your own. You need to first create three column files (see section 4
-below).**
+You now have a working template for event-related first-level modeling in FEAT. Next you will run the food-viewing block design (ds000157) on your own.
 
-## 4.  Make three column files
+---
 
-FSL uses three column tab-delimited text files describing the timing of
-your events. The first column is the onset, the second the duration of
-the event, and the third a weighting factor (usually 1, unless you are
-testing a hypothesis regarding parametric changes in activation; more on
-this later). You need one file for each condition of each run for each
-subject before running your analysis. We use **BIDSto3col.sh** script to
-extract the 3 column files.
+## 4) Create 3-column timing files for ds000157
 
-in your *base terminal*:
+FSL timing files are **tab-delimited** text files with three columns:
 
+1. onset (seconds)
+2. duration (seconds)
+3. weight (usually 1)
+
+You need one file per condition.
+
+In your **base terminal**:
+
+```bash
+cd ~
+git clone http://github.com/bids-standard/bidsutils.git
+cd bidsutils/BIDSto3col
+bash BIDSto3col.sh  ~/ds000157/sub-01/func/sub-01_task-passiveimageviewing_events.tsv sub-01
 ```
-cd ~;
-git clone http://github.com/bids-standard/bidsutils.git;
-cd bidsutils/BIDSto3col;
-bash BIDSto3col.sh  ~/ds000157/sub-01/func/sub-01_task-passiveimageviewing_events.tsv sub-01;
-```
 
-you should see three files created:
+You should see three files created:
 
-- sub-01_break.txt
-
-- sub-01_food.txt
-
-- sub-01_nonfood.txt
+- `sub-01_break.txt`
+- `sub-01_food.txt`
+- `sub-01_nonfood.txt`
 
 ![](images/lab4/media/image18.png)
 
-**Copy the three created .txt files from
-`~/bidsutils/BIDSto3col/` to `~/ds000157/sub-01/func/`**
+Copy the three files from:
 
-## Names:\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+`~/bidsutils/BIDSto3col/`
 
-# Summary of Exercises 
+to:
 
-For the exercises, you will focus on your own analyses of ds000157 (see
-above). **We will review in class next week, so please submit on time.**
+`~/ds000157/sub-01/func/`
 
-1.  After you create the 3-column files for ds000157, enter them all
-    into the FEAT GLM and describe your model.
+(So you can easily find them when you are in FEAT.)
 
-2.  Using the settings from the demonstration with the finger tapping
-    data, what do you observe in terms of brain responses when examining
-    contrasts of food \> nonfood and nonfood \> food?
+---
 
-3.  Using the food \> nonfood and nonfood \> food contrasts, compare and
-    contrast your results with voxel height thresholding and
-    cluster-extent thresholding.
+## 5) Run first-level stats for ds000157 (you do this)
 
-4.  Using the food \> nonfood and nonfood \> food contrasts, compare and
-    contrast your results with two smoothing kernels.
+Use the ds005085 walkthrough as your template, with these adjustments:
 
-5.  Create a temporal misalignment between your data and your model.
-    Describe what you did (you should know of two ways to do this now)
-    and compare and contrast your results for the food \> nonfood and
-    nonfood \> food contrasts.
+### 5.1 Find the functional input
+In a terminal, confirm the BOLD filename:
+
+```bash
+ls ~/ds000157/sub-01/func/*bold.nii.gz
+```
+
+Select that file in FEAT as your **4D data**.
+
+### 5.2 EVs for ds000157
+Use **3 EVs** (custom 3-column format), pointing to:
+
+- `sub-01_break.txt`
+- `sub-01_food.txt`
+- `sub-01_nonfood.txt`
+
+Use **Double-Gamma HRF** and keep **temporal derivatives off** for consistency with the walkthrough.
+
+### 5.3 Contrasts you will need
+At minimum, define these two contrasts (you will use them in the exercises):
+
+- **Food > Nonfood**
+- **Nonfood > Food**
+
+You may add others if they help your interpretation (e.g., Food > Break, Nonfood > Break).
+
+### 5.4 Output naming (avoid overwriting)
+You will run FEAT multiple times (thresholding, smoothing, misalignment). Use clear output names, e.g.:
+
+- `food_L1_base`
+- `food_L1_voxel`
+- `food_L1_cluster`
+- `food_L1_smooth5`
+- `food_L1_smooth10`
+- `food_L1_shifted`
+
+---
+
+
+# Summary of exercises (answer these for ds000157)
+
+For each question, keep your writing tight and evidence-based. A reader should be able to understand what you did and what you observed without guessing.
+
+**Screenshot requirement:** Include screenshots in your submission. Each answer should include at least one relevant screenshot, and you must include **at least 5 screenshots total** across the assignment (see “What to submit”).
+
+1) **Model specification (design + EVs).**  
+   After you create the 3-column files for ds000157, set up the FEAT GLM and describe your model at a level appropriate for a Methods section:
+   - EV names and what they represent
+   - convolution choice
+   - key preprocessing choices you used (list them briefly)
+   - which contrasts you tested and why  
+   *Include a screenshot of the design matrix page from the FEAT report.*
+
+2) **Food vs. nonfood contrasts (interpretation).**  
+   Using your **Food > Nonfood** and **Nonfood > Food** contrasts, describe what you see. Focus on:
+   - which general systems/regions are involved (no need for perfect labels)
+   - whether the pattern seems plausible given the task
+   - one alternative explanation or caveat (e.g., visual confounds, attention, threshold sensitivity)  
+   *Include at least one thresholded map screenshot (FEAT post-stats page or fsleyes).*
+
+3) **Multiple comparisons: voxel vs. cluster thresholding.**  
+   Compare your results under:
+   - **voxel height thresholding**, and
+   - **cluster-extent thresholding**  
+   Keep the rest of the model the same. Describe what changes (e.g., extent, peak intensity, number of clusters).  
+   *Include one screenshot for each method (same contrast).*
+
+4) **Smoothing kernels (two choices).**  
+   Re-run the model with **two different smoothing kernels** (choose two values that are meaningfully different, e.g., 5 mm vs. 10 mm).  
+   Compare how smoothing changes:
+   - spatial specificity
+   - apparent noise / “blotchiness”
+   - the visibility of your main effects  
+   *Include one screenshot showing the same contrast under both kernels.*
+
+5) **Temporal misalignment (two ways).**  
+   Create a temporal mismatch between your data and your model, then describe what happens to your **Food > Nonfood** (and/or Nonfood > Food) results.
+
+   Use **one** of these approaches, and then briefly explain a second approach (you do not need to run both):
+   - **Approach A (shift the timing):** shift onsets in one EV timing file by a constant amount (e.g., +6 seconds), then rerun FEAT.
+   - **Approach B (mis-model the HRF):** change the convolution choice (e.g., Double-Gamma → no convolution or a different HRF) and rerun.
+
+   Describe:
+   - exactly what you changed
+   - how the maps changed (extent/intensity/plausibility)
+   - why that change makes sense conceptually  
+   *Include a screenshot illustrating the “before vs after” comparison.*
+
+---
+
+## What to submit
+
+Submit **one document** (PDF, Word, or Markdown-exported PDF is fine) containing:
+
+- Answers to questions **1–5**
+- **At least 5 screenshots total**, embedded near the relevant answers
+
+Minimum recommended screenshots (you may include more):
+1. ds000157 **design matrix** page from the FEAT report
+2. ds000157 **registration** page from the FEAT report
+3. Food > Nonfood map (one thresholding method)
+4. Food > Nonfood map (the other thresholding method)
+5. A “before vs after” screenshot for the temporal misalignment manipulation
