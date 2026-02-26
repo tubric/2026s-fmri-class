@@ -64,8 +64,7 @@ datalad get sub-10015
 Now create a skull-stripped anatomical image (once) in your **FSL terminal**:
 
 ```bash
-bet ~/ds005085/sub-10015/anat/sub-10015_T1w.nii.gz \
-    ~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz
+bet ~/ds005085/sub-10015/anat/sub-10015_T1w.nii.gz ~/ds005085/sub-10015/anat/sub-10015_T1w_brain.nii.gz
 ```
 
 You will also need two timing files (3-column format) for **left** and **right** button presses. Download them onto your Neurodesk VM and move them into:
@@ -152,7 +151,7 @@ For this dataset, slice timing correction is reasonable because the design is ev
 
 Set the **Main structural image** to:
 
-`~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz`
+`~/ds005085/sub-10015/anat/sub-10015_T1w_brain.nii.gz`
 
 Then choose:
 - **Normal search**
