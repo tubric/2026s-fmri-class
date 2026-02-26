@@ -71,8 +71,8 @@ You will also need two timing files (3-column format) for **left** and **right**
 
 `~/ds005085/sub-10015/func/`
 
-- [left button press](https://github.com/DVSneuro/2025-fmri-class/blob/main/Utilities/_guess_allLeftButton.txt)
-- [right button press](https://github.com/DVSneuro/2025-fmri-class/blob/main/Utilities/_guess_allRightButton.txt)
+- [left button press](https://raw.githubusercontent.com/DVSneuro/2025f-fmri-class/refs/heads/main/Utilities/_guess_allLeftButton.txt)
+- [right button press](https://raw.githubusercontent.com/DVSneuro/2025f-fmri-class/refs/heads/main/Utilities/_guess_allRightButton.txt)
 
 **Files you will use (sub-10015):**
 
