@@ -15,7 +15,9 @@ Manually add the background high-resolution image. Here, MNI_T1_2mm.nii.gz is ch
 
 Then add the result you would like to visualize.
 <img src="images/lab3/media/lab3_sup5.png">
-For example, you would like to visualize the L1 statistical result of the *second contrast*, the image you want to overlay on top of the standardized image would be `thresh_zstat2.nii.gz` in your feat output folder.
+For example, you would like to visualize the motor or cerebellum activation in the L1 statistical result of the *second contrast: left-right*, the image you want to overlay on top of the standardized image would be `thresh_zstat2.nii.gz` in your feat output folder.
+<img src="images/lab3/media/lab3_sup2.png">
+
 <img src="images/lab3/media/lab3_sup6.png">
 
 Based on where you observed activation in report_log.html, navigate in the brain to find the significant activation cluster
@@ -32,8 +34,6 @@ MRIcroGL
 ```
 <img src="images/lab3/media/lab3_sup1.png">
 Once MRIcorGL is booted up, the standardized image is already on display and you only need to overlay your image of choice on it.
-
-<img src="images/lab3/media/lab3_sup2.png">
 
 Click File -> Add Overlay and locate this brain image. 
 <img src="images/lab3/media/lab3_sup3.png">
