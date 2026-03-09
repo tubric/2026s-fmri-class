@@ -1,198 +1,299 @@
-Congratulations on getting your first L1 output and seeing activation! 
-If you would like to step further and approach what a modern neuroimaging study actual do, this his supplement to Lab 3 provides an overview of 
-1. how you visualize L1 output on top of a structural image using fsleyes or 
-2. how you can use fmriprep output for L1 analyses in fsl.
-We use the sub-01 in the food viewing dataset (ds000157) as an example. 
+# Lab 3 (Supplement): Visualizing FEAT output and using fMRIPrep output in FEAT
 
-# Visualization: with fsleyes
+This supplement extends Lab 3 in two practical ways. First, it shows how to visualize first-level results more clearly in **FSLEyes** or **MRIcroGL**. Second, it shows how to run **fMRIPrep** on a BIDS dataset and then use the resulting preprocessed BOLD data and confounds in **FEAT**.
 
-First, we can visualize our result using the fsleyes
+We use **sub-01** from the food-viewing dataset (**ds000157**) as the example.
+
+You are not being graded on memorizing flags. You are being graded on whether you can run the pipeline, locate the relevant outputs, and make a simple comparison to the standard FEAT workflow.
+
+---
+
+## Learning objectives
+
+By the end of this supplement, you should be able to:
+
+- visualize thresholded first-level results on a standardized anatomical background
+- run **fMRIPrep** for one participant from a BIDS dataset
+- identify the most useful fMRIPrep outputs for first-level modeling in FSL
+- use a preprocessed BOLD file and confounds file from fMRIPrep in **FEAT**
+
+---
+
+## Before you begin
+
+### 1) Confirm that the dataset exists
+
+In a terminal:
+
+```bash
+ls ~/ds000157
+ls ~/ds000157/sub-01
 ```
+
+### 2) Make sure the needed software is available
+
+Depending on how you opened Neurodesk, these tools may already be available. If not, load the modules directly:
+
+```bash
+ml fsl
+ml mricrogl
+ml fmriprep/25.1.3
+```
+
+You can also verify that the commands are available:
+
+```bash
+which fsleyes
+which MRIcroGL
+which fmriprep
+```
+
+### 3) FreeSurfer license file
+
+fMRIPrep expects a FreeSurfer license file, even when you use `--fs-no-reconall`.
+
+Check that this file exists:
+
+```bash
+ls -l ~/.license
+```
+
+---
+
+# 1) Visualization with FSLEyes
+
+Open FSLEyes:
+
+```bash
 ml fsl
 fsleyes
 ```
-Manually add the background high-resolution image. Here, MNI_T1_2mm.nii.gz is chosen.
 
-Then add the result you would like to visualize.
+Manually add a high-resolution anatomical background image. Here, `MNI_T1_2mm.nii.gz` is used.
+
+Then add the statistical image you want to visualize.
 <img src="images/lab3/media/lab3_sup5.png">
-For example, you would like to visualize the motor or cerebellum activation in the L1 statistical result of the *second contrast: left-right*, the image you want to overlay on top of the standardized image would be `thresh_zstat2.nii.gz` in your feat output folder.
+
+For example, if you want to visualize activation from the **second contrast (left-right)**, the image to overlay would be `thresh_zstat2.nii.gz` from your FEAT output folder.
 <img src="images/lab3/media/lab3_sup2.png">
 
 <img src="images/lab3/media/lab3_sup6.png">
 
-Based on where you observed activation in report_log.html, navigate in the brain to find the significant activation cluster
-Change the min value to 3.1, since this result comes from a cluster-based correction with z=3.1, so the thresholded z value is at a minimum of 3.1. 
-Then, to improve the ease of  click the two greyscale bars on the right to the lower and upper bounds. Here "Hot" theme that is commonly used in journal articles is chosen.
+Using the activation shown in your FEAT report as a guide, navigate to the relevant cluster in the brain. Set the minimum display value to **3.1**. Because this is a cluster-corrected result with a cluster-forming threshold of **z = 3.1**, the thresholded Z-statistic image should begin at that value.
+
+To make the result easier to see, adjust the lower and upper display bounds using the greyscale bars on the right. Here, the **Hot** color map is used because it is common in figures.
 <img src="images/lab3/media/lab3_sup7.png">
 
-# Visualization: with MRIcroGL
-MRIcroGL is an alternative to fsleyes that produces publication-quality visualization for brain imaging studies. 
-```
-#in your base terminal
+---
+
+# 2) Visualization with MRIcroGL
+
+**MRIcroGL** is an alternative to FSLEyes that can produce cleaner, publication-style figures.
+
+```bash
+# in your base terminal
 ml mricrogl
 MRIcroGL
 ```
-<img src="images/lab3/media/lab3_sup1.png">
-Once MRIcorGL is booted up, the standardized image is already on display and you only need to overlay your image of choice on it.
 
-Click File -> Add Overlay and locate this brain image. 
+<img src="images/lab3/media/lab3_sup1.png">
+
+Once **MRIcroGL** opens, a standardized anatomical image is already displayed, so you only need to add the statistical overlay.
+
+Click **File -> Add Overlay** and locate the image you want to display.
 <img src="images/lab3/media/lab3_sup3.png">
 
-Here, the color theme in the pull-down menu next to the button is again changed to 4hot, and the *Darkest threshold* is again changed to 3.1. 
+Here, the color map is again changed to **4hot**, and the **Darkest threshold** is changed to **3.1**.
 
 <img src="images/lab3/media/lab3_sup4.png">
 
-# fmriprep on food viewing
+---
 
-setting up directories
-```
+# 3) Run fMRIPrep on the food-viewing dataset
+
+For consistency with the Lab 2 supplement, the example below keeps the BIDS dataset read-only in spirit and writes outputs to a separate Lab 3 folder.
+
+### 3.1 Set up directories
+
+```bash
 #!/usr/bin/env bash
 SUB="01"
-HOME="/home/jovyan"
-PROJ="$HOME/ds000157"
-LICENSES="$HOME/ds005123_me_demo/licenses"
-BIDS="$PROJ/bids"
-FMRIPREP_OUT="$PROJ/derivatives/fmriprep-25.2.3"
-WORK="$PROJ/work"
-
-# assuming the licence was in the location for the last fmriprep practice
+BIDS="$HOME/ds000157"
+FMRIPREP_OUT="$HOME/Lab_3/fmriprep_out"
+WORK="$HOME/Lab_3/fmriprep_work"
+FS_LICENSE="$HOME/.license"
 
 mkdir -p \
-  "$PROJ/bids" \
-  "$PROJ/derivatives/fmriprep-25.2.3" \
-  "$PROJ/work" \
+  "$FMRIPREP_OUT" \
+  "$WORK"
 ```
 
-```
-#load up fmriprep
-ml fmriprep
+### 3.2 Load fMRIPrep
+
+```bash
+ml fmriprep/25.1.3
 ```
 
-```
-fmriprep $BIDS \
-$FMRIPREP_OUT \
-participant   --participant-label $SUB \
---stop-on-first-crash \
---skip-bids-validation \
---output-spaces MNI152NLin6Asym \
---fs-no-reconall \
-#--fs-license-file "$LICENSES/fs_license.txt" \
---fs-license-file "/home/jovyan/Desktop/fs_lisence.txt' \
---fs-subjects-dir "$FMRIPREP_OUT/sourcedata/freesurfer" \
--w $WORK \
---nthreads 14 \
---omp-nthreads 1 \
---mem-mb 24000 \
--v
+### 3.3 Run fMRIPrep
+
+```bash
+fmriprep \
+  "$BIDS" \
+  "$FMRIPREP_OUT" \
+  participant \
+  --participant-label "$SUB" \
+  --stop-on-first-crash \
+  --skip-bids-validation \
+  --output-spaces MNI152NLin6Asym \
+  --fs-no-reconall \
+  --fs-license-file "$FS_LICENSE" \
+  -w "$WORK" \
+  --nthreads 14 \
+  --omp-nthreads 1 \
+  --mem-mb 24000 \
+  -v
 ```
 
+When the run finishes, the most useful outputs for this supplement are:
 
-# fsl L1 on fmriprep output: smoothing and confounds
-Open Feat GUI
-```
+- the **HTML report**: `~/Lab_3/fmriprep_out/fmriprep/sub-01.html`
+- the **preprocessed BOLD file(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-01/func/*desc-preproc_bold.nii.gz`
+- the **confounds table(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-01/func/*desc-confounds_timeseries.tsv`
+
+---
+
+# 4) Use fMRIPrep output for first-level FEAT analysis
+
+Open the FEAT GUI:
+
+```bash
 ml fsl
 Feat &
 ```
 
-Keep the analysis settings as First-level analysis and Full analysis. 
+Keep the analysis settings as **First-level analysis** and **Full analysis**.
 
-The fmriprep preprocessed functional image you want to operate on is 
-`/project/derivatives/fmriprep/sub-01/func/sub-01_task-XX_run-XX_bold_space-MNI152NLin2009cAsym_preproc.nii`
+The fMRIPrep-preprocessed functional image you want to use will look something like this:
 
-Under *data* tab, load it through *Select 4D Data*. 
+`~/Lab_3/fmriprep_out/fmriprep/sub-01/func/sub-01_task-XX_run-XX_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz`
+
+Under the **Data** tab, load that file with **Select 4D Data**.
 <img src="images/lab3/media/lab3_sup8.png">
 
-The only preprocessing we still need to perform on the fmriprep-ed functional image is smoothing. 
-Turn off
-1. all the preprocessing options but smoothing where you entered your smoothing kernel size in the *pre-stats* tab, and 
-2. all of the options in *Registration* tab . 
+Because fMRIPrep has already handled most preprocessing, the only preprocessing step you still need to apply in FEAT here is **smoothing**.
+
+Turn off:
+1. all preprocessing options **except smoothing** in the **Pre-stats** tab, and
+2. all options in the **Registration** tab.
 <img src="images/lab3/media/lab3_sup9.png">
 
 <img src="images/lab3/media/lab3_sup10.png">
 
-An advantage of using fmriprep is that it generates confounds for L1 analysis. The basic confounds are the six transformations for movements and six cosine waves for slow drift, and are the only confound we are using here. Other information generated by fmriprep such as aCOMPcors (anatomical structure-based noise component) are also commonly included. 
-The following code snippets extract the 12 confounds. 
-```
-#!/usr/bin/env bash
+---
 
-# --- Set variables ---
-SUB=01
-TASK=
-RUN=01
-PROJ=""
+# 5) Extract basic confounds from the fMRIPrep TSV
 
-# Input TSV from fMRIPrep
-#INPUT_TSV="$PROJ/derivatives/fmriprep/sub-$SUB/func/sub-${SUB}_task-${TASK}_run-${RUN}_bold_confounds.tsv"
+One advantage of fMRIPrep is that it provides confounds you can add to your first-level model. For this example, we will keep things simple and extract:
 
-# Output directory
-OUTDIR="$PROJ/derivatives/fsl/confounds"
-mkdir -p "$OUTDIR"
+- the six rigid-body motion parameters: `trans_x`, `trans_y`, `trans_z`, `rot_x`, `rot_y`, `rot_z`
+- the first six cosine regressors for slow drift
 
-# Output TSV filename
-OUTFILE="$OUTDIR/sub-${SUB}_task-${TASK}_run-${RUN}_desc-fslConfounds.tsv"
+A simple Python approach is usually the least error-prone.
 
-# Columns to extract (motion + slow drift)
-COLS="X,Y,Z,RotX,RotY,RotZ,Cosine00,Cosine01,Cosine02,Cosine03,Cosine04,Cosine05"
-
-# --- Extract columns using awk ---
-awk -v cols="$COLS" '
-BEGIN{
-    FS=OFS="\t"
-    split(cols, c, ",")
-}
-NR==1{
-    # Build index of desired columns
-    for(i=1;i<=NF;i++){
-        for(j in c){
-            if($i==c[j]){
-                idx[j]=i
-            }
-        }
-    }
-    # Print header
-    for(j=1;j<=length(c);j++){
-        printf "%s%s", c[j], (j<length(c)?OFS:ORS)
-    }
-    next
-}
-{
-    # Print selected columns
-    for(j=1;j<=length(c);j++){
-        printf "%s%s", $(idx[j]), (j<length(c)?OFS:ORS)
-    }
-}
-' "$INPUT_TSV" > "$OUTFILE"
-
-echo "Confounds extracted to $OUTFILE"
-```
-
-Or alternatively, use the cleaner Python code in the Jupyter Notebook in Neurodesk
-
-```
+```python
 import pandas as pd
-import os
 from pathlib import Path
 
-tsv_file = Path.home()/"ds001734/derivatives/fmriprep/sub-001/func/sub-001_task-MGT_run-01_bold_confounds.tsv"
+sub = "01"
+task = "YOURTASK"
+run = "01"
 
-confound = Path.home()/"ds001734/derivatives/fsl/confounds"
-out_file = confound/"sub-001_task-MGT_run-01_confounds.txt"
-confound.mkdir(parents=True, exist_ok=True)
+func_dir = Path.home() / "Lab_3" / "fmriprep_out" / "fmriprep" / f"sub-{sub}" / "func"
+input_tsv = func_dir / f"sub-{sub}_task-{task}_run-{run}_desc-confounds_timeseries.tsv"
 
-confounds = pd.read_csv(tsv_file, sep='\t')
+out_dir = Path.home() / "Lab_3" / "confounds"
+out_dir.mkdir(parents=True, exist_ok=True)
+out_file = out_dir / f"sub-{sub}_task-{task}_run-{run}_desc-fslConfounds.txt"
 
-# Select motion + first 6 cosine regressors (example)
-selected = confounds[['X', 'Y', 'Z', 'RotX', 'RotY', 'RotZ',
-                      'Cosine00', 'Cosine01', 'Cosine02', 'Cosine03', 'Cosine04', 'Cosine05']]
+confounds = pd.read_csv(input_tsv, sep="\t")
 
-selected.to_csv(out_file, sep=' ', index=False, header=False)
+motion_cols = ["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]
+cosine_cols = [c for c in confounds.columns if c.startswith("cosine")][:6]
+selected = confounds[motion_cols + cosine_cols]
+
+selected.to_csv(out_file, sep=" ", index=False, header=False)
+print(f"Confounds saved to: {out_file}")
 ```
 
-To add the confounds file you just extracted to the model, tick the box for add additional confound EVs and select the file you just generated. 
+If you prefer a shell-based approach, this version does the same thing:
+
+```bash
+#!/usr/bin/env bash
+
+SUB="01"
+TASK="YOURTASK"
+RUN="01"
+FUNC_DIR="$HOME/Lab_3/fmriprep_out/fmriprep/sub-${SUB}/func"
+INPUT_TSV="$FUNC_DIR/sub-${SUB}_task-${TASK}_run-${RUN}_desc-confounds_timeseries.tsv"
+OUTDIR="$HOME/Lab_3/confounds"
+OUTFILE="$OUTDIR/sub-${SUB}_task-${TASK}_run-${RUN}_desc-fslConfounds.txt"
+
+mkdir -p "$OUTDIR"
+export INPUT_TSV OUTFILE
+
+python - <<'PY'
+import pandas as pd
+from pathlib import Path
+import os
+
+input_tsv = Path(os.environ["INPUT_TSV"])
+out_file = Path(os.environ["OUTFILE"])
+
+confounds = pd.read_csv(input_tsv, sep="\t")
+motion_cols = ["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]
+cosine_cols = [c for c in confounds.columns if c.startswith("cosine")][:6]
+selected = confounds[motion_cols + cosine_cols]
+selected.to_csv(out_file, sep=" ", index=False, header=False)
+print(f"Confounds saved to: {out_file}")
+PY
+```
+
+To add the confounds file you just created to the model, tick the box for **Add additional confound EVs** and select that file.
 <img src="images/lab3/media/lab3_sup11.png">
 
-Follow the same procedure as usual for the L1 model setup (and later multiple comparison correction). After you finish, you should see the design matrix looking something like this: 
+Then finish the rest of the first-level setup as usual. After you finish, your design matrix should look something like this:
 <img src="images/lab3/media/lab3_sup12.png">
 
+---
 
+## What to submit (keep it simple)
 
+Submit **three screenshots** and **three short bullets**.
+
+### Screenshots
+
+1. **One visualization screenshot** from either **FSLEyes** or **MRIcroGL** showing your thresholded statistical map overlaid on an anatomical background.
+2. **One fMRIPrep screenshot** showing the HTML report or the location of the fMRIPrep outputs you used.
+3. **One FEAT screenshot** showing either:
+   - the selected fMRIPrep preprocessed BOLD file in the **Data** tab, or
+   - the confounds file added as **additional confound EVs**, or
+   - the final design matrix.
+
+### Bullets
+
+- **What was similar?** In 1 sentence, name one thing that was clearly similar between the standard FEAT workflow and the fMRIPrep + FEAT workflow.
+- **What was different?** In 1 sentence, name one useful thing that fMRIPrep provided that was not part of the simpler FEAT-only workflow.
+- **What did you learn?** In 1 sentence, explain one practical reason a researcher might choose to preprocess with fMRIPrep and then model in FEAT.
+
+---
+
+## Troubleshooting checklist
+
+- **`fmriprep: command not found`**  
+  Load the module first: `ml fmriprep/25.1.3`
+- **Cannot find the license file**  
+  Confirm that `~/.license` exists.
+- **Cannot find the confounds TSV**  
+  Double-check the subject, task, and run labels in the filename.
+- **FEAT cannot read the confounds file**  
+  Make sure the exported text file has no header row and uses spaces or tabs between columns.
