@@ -61,7 +61,7 @@ If not, look for it in `ds005123_me_demo/licenses` and 'mv' it over.
 
 ---
 
-# 1) Run fMRIPrep on the food-viewing dataset
+# 1) Run fMRIPrep on the sequence pilot dataset
 
 For consistency with the Lab 2 supplement, the example below keeps the BIDS dataset read-only in spirit and writes outputs to a separate Lab 3 folder.
 
