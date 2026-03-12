@@ -111,11 +111,6 @@ fmriprep \
 
 When the run finishes, the most useful outputs for this supplement are:
 
-
-
-sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz
-
-
 - the **HTML report**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015.html`
 - the **preprocessed BOLD file(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015/func/*desc-preproc_bold.nii.gz`
 - the **confounds table(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015/func/*desc-confounds_timeseries.tsv`
