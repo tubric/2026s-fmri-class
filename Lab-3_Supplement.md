@@ -2,7 +2,7 @@
 
 This supplement extends Lab 3 in two practical ways. First, it shows how to visualize first-level results more clearly in **FSLEyes** or **MRIcroGL**. Second, it shows how to run **fMRIPrep** on a BIDS dataset and then use the resulting preprocessed BOLD data and confounds in **FEAT**.
 
-We use **sub-01** from the food-viewing dataset (**ds000157**) as the example.
+We again use **sub-10015** from the sequence pilot dataset that focuses on left/right response (**ds005085**) as the example and expect you to be able to make a short transfer to the other dataset. 
 
 You are not being graded on memorizing flags. You are being graded on whether you can run the pipeline, locate the relevant outputs, and make a simple comparison to the standard FEAT workflow.
 
@@ -12,10 +12,10 @@ You are not being graded on memorizing flags. You are being graded on whether yo
 
 By the end of this supplement, you should be able to:
 
-- visualize thresholded first-level results on a standardized anatomical background
 - run **fMRIPrep** for one participant from a BIDS dataset
 - identify the most useful fMRIPrep outputs for first-level modeling in FSL
 - use a preprocessed BOLD file and confounds file from fMRIPrep in **FEAT**
+- visualize thresholded first-level results on a standardized anatomical background
 
 ---
 
@@ -26,8 +26,8 @@ By the end of this supplement, you should be able to:
 In a terminal:
 
 ```bash
-ls ~/ds000157
-ls ~/ds000157/sub-01
+ls ~/ds005085
+ls ~/ds005085/sub-10015
 ```
 
 ### 2) Make sure the needed software is available
@@ -57,84 +57,38 @@ Check that this file exists:
 ```bash
 ls -l ~/.license
 ```
+If not, look for it in `ds005123_me_demo/licenses` and 'mv' it over. 
 
 ---
 
-# 1) Visualization with FSLEyes
-
-Open FSLEyes:
-
-```bash
-ml fsl
-fsleyes
-```
-
-Manually add a high-resolution anatomical background image. Here, `MNI_T1_2mm.nii.gz` is used.
-
-Then add the statistical image you want to visualize.
-<img src="images/lab3/media/lab3_sup5.png">
-
-For example, if you want to visualize activation from the **second contrast (left-right)**, the image to overlay would be `thresh_zstat2.nii.gz` from your FEAT output folder.
-<img src="images/lab3/media/lab3_sup2.png">
-
-<img src="images/lab3/media/lab3_sup6.png">
-
-Using the activation shown in your FEAT report as a guide, navigate to the relevant cluster in the brain. Set the minimum display value to **3.1**. Because this is a cluster-corrected result with a cluster-forming threshold of **z = 3.1**, the thresholded Z-statistic image should begin at that value.
-
-To make the result easier to see, adjust the lower and upper display bounds using the greyscale bars on the right. Here, the **Hot** color map is used because it is common in figures.
-<img src="images/lab3/media/lab3_sup7.png">
-
----
-
-# 2) Visualization with MRIcroGL
-
-**MRIcroGL** is an alternative to FSLEyes that can produce cleaner, publication-style figures.
-
-```bash
-# in your base terminal
-ml mricrogl
-MRIcroGL
-```
-
-<img src="images/lab3/media/lab3_sup1.png">
-
-Once **MRIcroGL** opens, a standardized anatomical image is already displayed, so you only need to add the statistical overlay.
-
-Click **File -> Add Overlay** and locate the image you want to display.
-<img src="images/lab3/media/lab3_sup3.png">
-
-Here, the color map is again changed to **4hot**, and the **Darkest threshold** is changed to **3.1**.
-
-<img src="images/lab3/media/lab3_sup4.png">
-
----
-
-# 3) Run fMRIPrep on the food-viewing dataset
+# 1) Run fMRIPrep on the food-viewing dataset
 
 For consistency with the Lab 2 supplement, the example below keeps the BIDS dataset read-only in spirit and writes outputs to a separate Lab 3 folder.
 
-### 3.1 Set up directories
+### 1.1 Set up directories
 
 ```bash
 #!/usr/bin/env bash
-SUB="01"
-BIDS="$HOME/ds000157"
+SUB="10015"
+BIDS="$HOME/ds005085"
 FMRIPREP_OUT="$HOME/Lab_3/fmriprep_out"
 WORK="$HOME/Lab_3/fmriprep_work"
 FS_LICENSE="$HOME/.license"
+FS_dir="$HOME/home/jovyan/freesurfer-subjects-dir"
 
 mkdir -p \
   "$FMRIPREP_OUT" \
-  "$WORK"
+  "$WORK" \
+  "$HOME/freesurfer-subjects-dir"
 ```
 
-### 3.2 Load fMRIPrep
+### 1.2 Load fMRIPrep
 
 ```bash
 ml fmriprep/25.1.3
 ```
 
-### 3.3 Run fMRIPrep
+### 1.3 Run fMRIPrep
 
 ```bash
 fmriprep \
@@ -147,6 +101,7 @@ fmriprep \
   --output-spaces MNI152NLin6Asym \
   --fs-no-reconall \
   --fs-license-file "$FS_LICENSE" \
+  --fs-subjects-dir "$FS_dir" \
   -w "$WORK" \
   --nthreads 14 \
   --omp-nthreads 1 \
@@ -156,13 +111,18 @@ fmriprep \
 
 When the run finishes, the most useful outputs for this supplement are:
 
-- the **HTML report**: `~/Lab_3/fmriprep_out/fmriprep/sub-01.html`
-- the **preprocessed BOLD file(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-01/func/*desc-preproc_bold.nii.gz`
-- the **confounds table(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-01/func/*desc-confounds_timeseries.tsv`
+
+
+sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz
+
+
+- the **HTML report**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015.html`
+- the **preprocessed BOLD file(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015/func/*desc-preproc_bold.nii.gz`
+- the **confounds table(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015/func/*desc-confounds_timeseries.tsv`
 
 ---
 
-# 4) Use fMRIPrep output for first-level FEAT analysis
+# 2) Use fMRIPrep output for first-level FEAT analysis
 
 Open the FEAT GUI:
 
@@ -175,7 +135,7 @@ Keep the analysis settings as **First-level analysis** and **Full analysis**.
 
 The fMRIPrep-preprocessed functional image you want to use will look something like this:
 
-`~/Lab_3/fmriprep_out/fmriprep/sub-01/func/sub-01_task-XX_run-XX_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz`
+`~/Lab_3/fmriprep_out/fmriprep/sub-XX/func/sub-XX_task-XX_run-XX_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz`
 
 Under the **Data** tab, load that file with **Select 4D Data**.
 <img src="images/lab3/media/lab3_sup8.png">
@@ -191,7 +151,7 @@ Turn off:
 
 ---
 
-# 5) Extract basic confounds from the fMRIPrep TSV
+# 3) Extract basic confounds from the fMRIPrep TSV
 
 One advantage of fMRIPrep is that it provides confounds you can add to your first-level model. For this example, we will keep things simple and extract:
 
@@ -204,8 +164,8 @@ A simple Python approach is usually the least error-prone.
 import pandas as pd
 from pathlib import Path
 
-sub = "01"
-task = "YOURTASK"
+sub = "10015"
+task = "sharedreward"
 run = "01"
 
 func_dir = Path.home() / "Lab_3" / "fmriprep_out" / "fmriprep" / f"sub-{sub}" / "func"
@@ -230,8 +190,8 @@ If you prefer a shell-based approach, this version does the same thing:
 ```bash
 #!/usr/bin/env bash
 
-SUB="01"
-TASK="YOURTASK"
+SUB="10015"
+TASK="sharedreward"
 RUN="01"
 FUNC_DIR="$HOME/Lab_3/fmriprep_out/fmriprep/sub-${SUB}/func"
 INPUT_TSV="$FUNC_DIR/sub-${SUB}_task-${TASK}_run-${RUN}_desc-confounds_timeseries.tsv"
@@ -263,6 +223,53 @@ To add the confounds file you just created to the model, tick the box for **Add 
 
 Then finish the rest of the first-level setup as usual. After you finish, your design matrix should look something like this:
 <img src="images/lab3/media/lab3_sup12.png">
+
+# 4) Visualization with FSLEyes
+
+Open FSLEyes:
+
+```bash
+ml fsl
+fsleyes
+```
+
+Manually add a high-resolution anatomical background image. Here, `MNI_T1_2mm.nii.gz` is used.
+
+Then add the statistical image you want to visualize.
+<img src="images/lab3/media/lab3_sup5.png">
+
+For example, if you want to visualize activation from the **second contrast (left-right)**, the image to overlay would be `thresh_zstat2.nii.gz` from your FEAT output folder.
+<img src="images/lab3/media/lab3_sup2.png">
+
+<img src="images/lab3/media/lab3_sup6.png">
+
+Using the activation shown in your FEAT report as a guide, navigate to the relevant cluster in the brain. Set the minimum display value to **3.1**. Because this is a cluster-corrected result with a cluster-forming threshold of **z = 3.1**, the thresholded Z-statistic image should begin at that value.
+
+To make the result easier to see, adjust the lower and upper display bounds using the greyscale bars on the right. Here, the **Hot** color map is used because it is common in figures.
+<img src="images/lab3/media/lab3_sup7.png">
+
+---
+
+# 5) Visualization with MRIcroGL
+
+**MRIcroGL** is an alternative to FSLEyes that can produce cleaner, publication-style figures.
+
+```bash
+# in your base terminal
+ml mricrogl
+MRIcroGL
+```
+
+<img src="images/lab3/media/lab3_sup1.png">
+
+Once **MRIcroGL** opens, a standardized anatomical image is already displayed, so you only need to add the statistical overlay.
+
+Click **File -> Add Overlay** and locate the image you want to display.
+<img src="images/lab3/media/lab3_sup3.png">
+
+Here, the color map is again changed to **4hot**, and the **Darkest threshold** is changed to **3.1**.
+
+<img src="images/lab3/media/lab3_sup4.png">
 
 ---
 
