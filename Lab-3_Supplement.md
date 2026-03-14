@@ -57,7 +57,7 @@ Check that this file exists:
 ```bash
 ls -l ~/.license
 ```
-If not, look for it in `ds005123_me_demo/licenses` and 'mv' it over. 
+If not, look for it in `ds005123_me_demo/licenses` and `mv` it over. 
 
 ---
 
@@ -111,9 +111,9 @@ fmriprep \
 
 When the run finishes, the most useful outputs for this supplement are:
 
-- the **HTML report**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015.html`
-- the **preprocessed BOLD file(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015/func/*desc-preproc_bold.nii.gz`
-- the **confounds table(s)**: `~/Lab_3/fmriprep_out/fmriprep/sub-10015/func/*desc-confounds_timeseries.tsv`
+- the **HTML report**: `~/Lab_3/fmriprep_out/sub-10015.html`
+- the **preprocessed BOLD file(s)**: `~/Lab_3/fmriprep_out/sub-10015/func/*desc-preproc_bold.nii.gz`
+- the **confounds table(s)**: `~/Lab_3/fmriprep_out/sub-10015/func/*desc-confounds_timeseries.tsv`
 
 ---
 
@@ -129,15 +129,16 @@ Feat &
 Keep the analysis settings as **First-level analysis** and **Full analysis**.
 
 The fMRIPrep-preprocessed functional image you want to use will look something like this:
+`fmriprep_out_dir/fmriprep/sub-XX/func/sub-XX_task-XX_run-XX_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz`
 
-`~/Lab_3/fmriprep_out/fmriprep/sub-XX/func/sub-XX_task-XX_run-XX_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz`
+In our case of sequence pilot, the preprocessed image is `~/Lab_3/fmriprep_out/sub-10015/func/sub-10015_task-sharedreward_acq-mb3me1_space-MNI152NLin6Asym_desc-preproc_bold.nii.gz`
 
 Under the **Data** tab, load that file with **Select 4D Data**.
 <img src="images/lab3/media/lab3_sup8.png">
 
 Because fMRIPrep has already handled most preprocessing, the only preprocessing step you still need to apply in FEAT here is **smoothing**.
 
-Turn off:
+**Turn off**:
 1. all preprocessing options **except smoothing** in the **Pre-stats** tab, and
 2. all options in the **Registration** tab.
 <img src="images/lab3/media/lab3_sup9.png">
@@ -152,7 +153,8 @@ One advantage of fMRIPrep is that it provides confounds you can add to your firs
 
 - the six rigid-body motion parameters: `trans_x`, `trans_y`, `trans_z`, `rot_x`, `rot_y`, `rot_z`
 - the first six cosine regressors for slow drift
-
+- the non-steady-state regressor(s)
+  
 A simple Python approach is usually the least error-prone.
 
 ```python
@@ -161,20 +163,20 @@ from pathlib import Path
 
 sub = "10015"
 task = "sharedreward"
-run = "01"
 
-func_dir = Path.home() / "Lab_3" / "fmriprep_out" / "fmriprep" / f"sub-{sub}" / "func"
-input_tsv = func_dir / f"sub-{sub}_task-{task}_run-{run}_desc-confounds_timeseries.tsv"
+func_dir = Path.home() / "Lab_3" / "fmriprep_out" / f"sub-{sub}" / "func"
+input_tsv = func_dir / f"sub-{sub}_task-{task}_acq-mb3me1_desc-confounds_timeseries.tsv"
+
 
 out_dir = Path.home() / "Lab_3" / "confounds"
 out_dir.mkdir(parents=True, exist_ok=True)
-out_file = out_dir / f"sub-{sub}_task-{task}_run-{run}_desc-fslConfounds.txt"
+out_file = out_dir / f"sub-{sub}_task-{task}_desc-fslConfounds.txt"
 
 confounds = pd.read_csv(input_tsv, sep="\t")
 
 motion_cols = ["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]
 cosine_cols = [c for c in confounds.columns if c.startswith("cosine")][:6]
-selected = confounds[motion_cols + cosine_cols]
+selected = confounds[motion_cols + cosine_cols + ["non_steady_state_outlier00"]]
 
 selected.to_csv(out_file, sep=" ", index=False, header=False)
 print(f"Confounds saved to: {out_file}")
@@ -187,27 +189,24 @@ If you prefer a shell-based approach, this version does the same thing:
 
 SUB="10015"
 TASK="sharedreward"
-RUN="01"
-FUNC_DIR="$HOME/Lab_3/fmriprep_out/fmriprep/sub-${SUB}/func"
-INPUT_TSV="$FUNC_DIR/sub-${SUB}_task-${TASK}_run-${RUN}_desc-confounds_timeseries.tsv"
+FUNC_DIR="$HOME/Lab_3/fmriprep_out/sub-${SUB}/func"
+INPUT_TSV="$FUNC_DIR/sub-${SUB}_task-${TASK}_acq-mb3me1_desc-confounds_timeseries.tsv"
 OUTDIR="$HOME/Lab_3/confounds"
-OUTFILE="$OUTDIR/sub-${SUB}_task-${TASK}_run-${RUN}_desc-fslConfounds.txt"
+OUTFILE="$OUTDIR/sub-${SUB}_task-${TASK}_desc-fslConfounds.txt"
 
 mkdir -p "$OUTDIR"
-export INPUT_TSV OUTFILE
 
-python - <<'PY'
+python - <<PY
 import pandas as pd
 from pathlib import Path
-import os
 
-input_tsv = Path(os.environ["INPUT_TSV"])
-out_file = Path(os.environ["OUTFILE"])
+input_tsv = Path("$INPUT_TSV")
+out_file = Path("$OUTFILE")
 
 confounds = pd.read_csv(input_tsv, sep="\t")
 motion_cols = ["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]
 cosine_cols = [c for c in confounds.columns if c.startswith("cosine")][:6]
-selected = confounds[motion_cols + cosine_cols]
+selected = confounds[motion_cols + cosine_cols + ["non_steady_state_outlier00"]]
 selected.to_csv(out_file, sep=" ", index=False, header=False)
 print(f"Confounds saved to: {out_file}")
 PY
@@ -270,17 +269,17 @@ Here, the color map is again changed to **4hot**, and the **Darkest threshold** 
 
 ## What to submit (keep it simple)
 
-Submit **three screenshots** and **three short bullets**.
+Work through on food viewing dataset and submit **three screenshots** and **three short bullets**.
 
 ### Screenshots
 
-1. **One visualization screenshot** from either **FSLEyes** or **MRIcroGL** showing your thresholded statistical map overlaid on an anatomical background.
-2. **One fMRIPrep screenshot** showing the HTML report or the location of the fMRIPrep outputs you used.
-3. **One FEAT screenshot** showing either:
+1. **One fMRIPrep screenshot** showing the HTML report or the location of the fMRIPrep outputs you used.
+2. **One FEAT screenshot** showing either:
    - the selected fMRIPrep preprocessed BOLD file in the **Data** tab, or
    - the confounds file added as **additional confound EVs**, or
    - the final design matrix.
-
+3. **One visualization screenshot** from either **FSLEyes** or **MRIcroGL** showing your thresholded statistical map overlaid on an anatomical background.
+   
 ### Bullets
 
 - **What was similar?** In 1 sentence, name one thing that was clearly similar between the standard FEAT workflow and the fMRIPrep + FEAT workflow.
