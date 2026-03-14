@@ -151,7 +151,7 @@ For this dataset, slice timing correction is reasonable because the design is ev
 
 Set the **Main structural image** to:
 
-`~/ds005085/sub-10015/anat/sub-10015_T1w_brain.nii.gz`
+`~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz`
 
 Then choose:
 - **Normal search**
