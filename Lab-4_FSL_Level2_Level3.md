@@ -52,7 +52,7 @@ This lab uses a preprocessed dataset (~7 GB) hosted on OneDrive.
 
 ⚠️ Due to OneDrive limitations, **you must download this file manually through your Neurodesk browser**.
 
-[Download Lab 4 Data from OneDrive](https://tuprd-my.sharepoint.com/:u:/g/personal/tug87422_temple_edu/IQArYdWo3ri2SLhqi3lyrb-yAWsPGvut0-4jqNzpXBzfeQE?e=0ZXqqJ)
+[Download Lab 4 Data from OneDrive](https://tuprd-my.sharepoint.com/:u:/g/personal/tug87422_temple_edu/IQArYdWo3ri2SLhqi3lyrb-yARG3SFPKehZf-op4vDnDkDA?e=nhzujm)
 
 This is a large compressed file, so it may take a while to download. Please do this ahead of time.
 
