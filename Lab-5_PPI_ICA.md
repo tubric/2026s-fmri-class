@@ -1,11 +1,11 @@
 
-# Lab 6: Psychophysiological Interaction (PPI) Analyses and Independent Component Analysis (ICA)
+# Lab 5: Psychophysiological Interaction (PPI) Analyses and Independent Component Analysis (ICA)
 
 ## Learning Objectives
 
 We’ve covered task-dependent activity analyses in previous labs. In this lab we’re going to look at methods involving *functional connectivity* and *ICA*:
 
-- Make anatomical masks and extract signal for the seed region of PPI  
+- Make anatomical masks and extract signals for the seed region of PPI  
 - Set up and describe the design matrix of PPI with interaction terms and seed regressor  
 - Understand and interpret the FEAT report  
 - Compare MELODIC ICA data exploration report with FEAT report  
@@ -14,7 +14,7 @@ We’ve covered task-dependent activity analyses in previous labs. In this lab w
 
 ## Dataset
 
-**Subject:** Sequence Pilot sub-10015 (used in Lab 4)  
+**Subject:** Sequence Pilot sub-10015 (used in Lab 3)  
 **Anatomical:**  
 `~/ds005085/sub-10015/anat/sub-10015_T1w_bet.nii.gz`  
 **BOLD:**  
@@ -32,13 +32,13 @@ We’ve covered task-dependent activity analyses in previous labs. In this lab w
 In your *fsl* terminal: 
 ```bash
 # Create and enter the folder for the lab
-mkdir ~/Lab_6/
-cd Lab_6
+mkdir ~/Lab_5/
+cd Lab_5
 
-# Set brain atlas path: this path apply if you are using fsl-6.0.7.16; change fsl folder name accordingly if you are loading a earlier version
+# Set brain atlas path: this path applies if you are using fsl-6.0.7.16; change the fsl folder name accordingly if you are loading an earlier version
 atlas=/opt/fsl-6.0.7.16/data/atlases/HarvardOxford/HarvardOxford-cort-maxprob-thr25-2mm.nii.gz
 ```
-Agian in your *fsl* terminal, open the atlas' associated XML file to find region index that is associated the Juxtapositional Lobule Cortex (formerly Supplementary Motor Cortex).  
+Again in your *fsl* terminal, open the atlas's associated XML file to find the region index that is associated with the Juxtapositional Lobule Cortex (formerly Supplementary Motor Cortex).  
 
 In your *fsl* terminal: 
 ``` bash
@@ -47,7 +47,7 @@ more /opt/fsl-6.0.7.16/data/atlases/HarvardOxford-Cortical.xml
 
 ![](images/lab6_47.png)
 
-> Note: FSL indexing generally 0-based. Add 1 to the index to locate ROI voxel value. 
+> Note: FSL indexing is generally 0-based. Add 1 to the index to locate the ROI voxel value. 
 
 Continue in *fsl* terminal, 
 ```bash
@@ -62,19 +62,19 @@ fsleyes JLC &
 
 ---
 
-## Move ROI to Native Space (cf. Lab 4)
+## Move ROI to Native Space (cf. Lab 3)
 
-Using fsl function *flirt* (FMRIB’s Linear Image Registration Tool) to transform standard space mask (JLC.nii) into native space using pre-estimated transformation matrix, the output falls in the your Lab_6 directory (reg/standard2example_func.mat). 
+Using fsl function *flirt* (FMRIB’s Linear Image Registration Tool) to transform the standard space mask (JLC.nii) into native space using the pre-estimated transformation matrix, the output falls in your Lab_5 directory (reg/standard2example_func.mat). 
 
-> Make sure you use the name you set for your sequence pilot output feat directory in Lab 4 to swap out “YOUR_OUTPUT.feat” in the following command to be able to locate the local space reference image and transformation matrix.
+> Make sure you use the name you set for your sequence pilot output feat directory in Lab 3 to swap out “YOUR_OUTPUT.feat” in the following command to be able to locate the local space reference image and transformation matrix.
 
 In *fsl* terminal: 
 ```bash
 flirt -in JLC.nii.gz \
-  -ref ~/Lab_4/YOUR_OUTPUT.feat/example_func.nii.gz \
+  -ref ~/Lab_3/YOUR_OUTPUT.feat/example_func.nii.gz \
   -out standardMask2example_func_JLC \
   -applyxfm \
-  -init ~/Lab_4/YOUR_OUTPUT.feat/reg/standard2example_func.mat \
+  -init ~/Lab_3/YOUR_OUTPUT.feat/reg/standard2example_func.mat \
   -datatype float
 ```
 
@@ -93,7 +93,7 @@ fslmaths standardMask2example_func_JLC -bin standardMask2example_func_JLC
 
 ```bash
 fslmeants -i ~/ds005085/sub-10015/func/sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz \
-  -m ~/Lab_6/standardMask2example_func_JLC.nii.gz \
+  -m ~/Lab_5/standardMask2example_func_JLC.nii.gz \
   -o sub-10015_task-sharedreward-task_mb3me1_JLC.txt
 ```
 The output is the average activation of that region in each volume of your subject across time
@@ -120,7 +120,7 @@ Keep the default settings of First-level analysis and Full analysis are selected
 
 - Load BOLD data:  
   `~/ds005085/sub-10015/func/sub-10015_task-sharedreward_acq-mb3me1_bold.nii.gz`
-- Name output directory: `~/Lab_6/OUTPUT.feat`
+- Name output directory: `~/Lab_5/OUTPUT.feat`
 
 ---
 
@@ -175,7 +175,7 @@ Set **Number of EVs** to **5** and configure as follows:
 3. Click the EV3 tab and make the following selections: 
 - EV name: Phys
 - Basic shape: Custom (1 column entry per volume format)
-- Filename: select the folder icon and navigate to ~/Lab_6/sub-10015_task-sharedreward-task_mb3me1_JLC.txt
+- Filename: select the folder icon and navigate to ~/Lab_5/sub-10015_task-sharedreward-task_mb3me1_JLC.txt
 - Convolution: NONE
 - DE-SELECT the option "Add temporal derivative" & “Apply temporal filtering”
 
@@ -219,7 +219,7 @@ Leave the default settings. Check that they are the same as in the picture below
 
 ![](images/lab6_219.png)
 
-View output in Neurodesk's Firefox: `~/Lab_6/OUTPUT.feat/report.html &`
+View output in Neurodesk's Firefox: `~/Lab_5/OUTPUT.feat/report.html &`
 
 
 ---
