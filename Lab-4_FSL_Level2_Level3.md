@@ -143,17 +143,15 @@ Set the following:
   - FEAT will add the appropriate higher-level output extension automatically
 - **Input type:** `3D cope images from FEAT directories`
 - **Number of inputs:** **6** (one per subject)
-- Click **Select FEAT directories**, then add the `cope11.feat` directory for each subject from the Level 2 outputs
+- Click **Select FEAT directories**, then add the `cope11.feat/stats/cope1.nii.gz` directory for each subject from the Level 2 outputs
 
 For example, if you used the suggested naming above, one input would look like:
-- `~/Lab_4/OUTPUT/sub-104_L2_act_sm-6.gfeat/cope11.feat`
+- `~/Lab_4/OUTPUT/sub-104_L2_act_sm-6.gfeat/cope11.feat/stats/cope1.nii.gz`
 
-**Important:** In the FEAT GUI, you should select the `cope11.feat` directories. Internally, FEAT will use the relevant `stats/cope1.nii.gz` image from each of those directories.
-
-**Pro-tip:** From the terminal, you can quickly list the Level 2 `cope11.feat` directories:
+**Pro-tip:** From the terminal, you can quickly list the Level 2 `cope11.feat/stats/cope1.nii.gz` cope images:
 
 ```bash
-ls -1d ~/Lab_4/OUTPUT/sub-1*_L2*.gfeat/cope11.feat
+ls -1d ~/Lab_4/OUTPUT/sub-1*_L2*.gfeat/cope11.feat/stats/cope1.nii.gz
 ```
 
 Then copy the output, and in the FEAT selection window, click **Paste** near the bottom.
